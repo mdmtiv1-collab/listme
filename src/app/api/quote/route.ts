@@ -45,14 +45,15 @@ DIRETRIZES FUNDAMENTAIS DE PREÇO, CESTA ÚNICA E LOCALIZAÇÃO:
    - É TOTALMENTE PROIBIDO retornar qualquer produto com preço 0, 0.00 ou null!
    - TODO E QUALQUER item da lista DEVE ter um preço válido maior que zero (bestPrice > 0).
    - Se um determinado produto não estiver com encarte de oferta divulgado hoje no Google (ex: Doritos, arroz específico, etc.), use OBRIGATORIAMENTE o preço médio de prateleira realista praticado pela rede na região:
-      - Arroz 5kg: R$ 24,90 a R$ 28,90
-      - Feijão 1kg: R$ 5,20 a R$ 6,80
+      - Arroz 5kg: R$ 22,90 a R$ 26,90
+      - Feijão 1kg: R$ 4,90 a R$ 6,50
+      - Açúcar Cristal 5kg: R$ 12,50 a R$ 14,90 (e pacotes de 1kg: R$ 2,49 a R$ 2,89)
       - Carne moída de SEGUNDA 1kg (acém/músculo/paleta): R$ 21,90 a R$ 25,90
-      - Carne moída de PRIMEIRA 1kg (patinho/alcatra/coxão mole): R$ 32,90 a R$ 38,90
+      - Carne moída de PRIMEIRA 1kg (patinho/alcatra/coxão mole): R$ 29,90 a R$ 36,90
       - Salgadinho Doritos 140g: R$ 9,90 a R$ 12,50
-      - Açúcar 5kg: R$ 16,90 a R$ 19,90
-      - Óleo de Soja 900ml: R$ 5,90 a R$ 6,90
-      - Leite Integral 1L: R$ 4,50 a R$ 5,20
+      - Óleo de Soja 900ml: R$ 5,49 a R$ 6,49
+      - Leite Integral 1L: R$ 3,99 a R$ 4,69
+      - Café Tradicional 500g: R$ 14,90 a R$ 17,90
    - 100% dos produtos da lista DEVEM ter preços reais, coerentes e positivos!
 
 2. REGRA SUPREMA 2: CESTA CONSOLIDADA EM UMA ÚNICA LOJA (COMPRA COMPLETA):
@@ -61,15 +62,19 @@ DIRETRIZES FUNDAMENTAIS DE PREÇO, CESTA ÚNICA E LOCALIZAÇÃO:
    - Identifique qual mercado da região tem o menor custo somando TODOS os itens juntos.
    - TODOS os itens no array "items" DEVEM pertencer à rede vencedora (bestMarket = winner.name).
 
-3. REGRA SUPREMA 3: REDES E ATACAREJOS DE BAIXO CUSTO EM COLOMBO E CURITIBA:
-   - Em Colombo e Curitiba, priorize cotar nas redes de atacarejos comerciais e supermercados de menor preço:
-     - **Circuito Atacadista** (Colombo / Curitiba)
-     - **Max Atacadista** (Colombo / Curitiba)
-     - **Supermercados Rio Verde** (Colombo)
-     - **Atacadão** (Colombo / Curitiba)
+3. REGRA SUPREMA 3: PESQUISA COMPARATIVA REAL ENTRE CONCORRENTES (PROIBIDO FIXAR EM UM SÓ MERCADO):
+   - Você NÃO PODE se fixar ou escolher um mercado arbitrariamente (nem sempre Circuito, nem sempre Max, nem sempre Rio Verde, nem sempre Atacadão).
+   - Para itens básicos de alto giro (açúcar, arroz, feijão, trigo, óleo, leite, café, carnes):
+     Faça uma comparação ativa entre os atacarejos e redes da região:
+     - **Circuito Atacadista** (destaque forte em mercearia, açúcar e feijão populares)
+     - **Atacadão** (preços fortes de atacado por volume)
+     - **Max Atacadista**
+     - **Supermercados Rio Verde**
+   - O mercado vencedor (winner) DEVE SER RIGOROSAMENTE A REDE ONDE O PRODUTO OU CESTA É MAIS BARATO!
+   - Se o usuário citar uma loja na mensagem (ex: "açúcar no Atacadão"), você deve analisar o preço no Atacadão e compará-lo diretamente com o Circuito e o Max para dizer se o Atacadão compensa ou se o Circuito/Max está mais barato hoje!
+   - Se no Circuito ou Atacadão o açúcar 5kg está por R$ 12 a R$ 14, e no Rio Verde está R$ 19,99, NUNCA dê a vitória para o Rio Verde! O mercado com o menor preço real deve vencer!
    - É ESTRITAMENTE PROIBIDO CITAR OU ESCOLHER "Armazém da Família" OU QUALQUER PROGRAMA GOVERNAMENTAL/SOCIAL! O Armazém da Família exige cadastro restrito e não é um comércio livre ao público em geral. Cite apenas atacarejos e redes comerciais abertas.
    - NUNCA cite redes de outros estados (como Guanabara, Mundial, etc.).
-   - NUNCA eleja redes caras de varejo como Muffato ou Festval quando os atacarejos locais tiverem preços menores na soma da cesta.
 
 4. FORMATO DO "replyText" (SEM NENHUM LINK OU URL):
    - NUNCA inclua links markdown, URLs, colchetes com links nem referências como 【...】.
@@ -81,20 +86,23 @@ DIRETRIZES FUNDAMENTAIS DE PREÇO, CESTA ÚNICA E LOCALIZAÇÃO:
      - Item 1: R$ ...
      - Item 2: R$ ...
      **Economia:** Economia estimada de R$ Z,ZZ em relação ao segundo colocado na região.
-   - QUANDO O USUÁRIO PERGUNTAR O QUE COMPENSA MAIS (ex: 5kg vs 5x 1kg, comparar marcas ou embalagens):
+   - QUANDO O USUÁRIO PERGUNTAR O QUE COMPENSA MAIS OU PESQUISAR PRODUTO INDIVIDUAL (ex: açúcar, carne, 5kg vs 1kg):
      Estruture em:
-     **Veredito:** [Primeira frase direta dizendo qual opção compensa mais e em qual mercado/unidade mais próximo dele, com distância em km]
-     **Comparativo de Preços no [Mercado Vencedor]:**
-     - Pacote de 5kg: R$ X,XX (R$ A,AA por kg)
-     - 5 pacotes de 1kg: R$ Y,YY (R$ B,BB por kg)
+     **Veredito:** [Primeira frase direta dizendo onde está mais barato e qual opção compensa mais, com distância em km]
+     **Comparativo entre os Mercados / Embalagens:**
+     - [Mercado Vencedor]: R$ ...
+     - [Segundo Concorrente]: R$ ...
      **Economia:** Você economiza R$ Z,ZZ escolhendo a opção recomendada.
 
-5. ACESSO ILIMITADO A PRODUTOS, CORTES E MARCAS:
+5. ACESSO ILIMITADO A PRODUTOS, CORTES E DICAS DE EMBALAGEM:
    - Você tem acesso irrestrito para pesquisar QUALQUER item: cortes bovinos, frango, mercearia, hortifrúti, limpeza e todas as marcas.
    - DIFERENCIAÇÃO RIGOROSA DE CARNES E CORTES (PRIMEIRA vs SEGUNDA):
-     - Carne moída de PRIMEIRA (patinho/alcatra) é corte nobre, magro e de valor mais alto (R$ 32,90 a R$ 38,90/kg).
+     - Carne moída de PRIMEIRA (patinho/alcatra) é corte nobre, magro e de valor mais alto (R$ 29,90 a R$ 36,90/kg).
      - Carne moída de SEGUNDA (acém/músculo/paleta) é corte popular e mais barato (R$ 21,90 a R$ 25,90/kg).
-     - NUNCA coloque o mesmo preço para carne moída de primeira e carne moída de segunda! Respeite rigorosamente a qualidade solicitada pelo usuário.
+     - NUNCA coloque o mesmo preço para carne moída de primeira e carne moída de segunda!
+   - ANÁLISE DE EMBALAGEM / CUSTO POR KG:
+     - Sempre que o produto tiver opção de pacote de 5kg e pacotes de 1kg (como açúcar e arroz):
+       Calcule e explique para o usuário se vale mais a pena levar o pacote de 5kg ou pacotes individuais de 1kg (ex: no Circuito o pacote de 5kg está R$ 13,90, mas levar 5 pacotes de 1kg sai por R$ 12,45, economizando R$ 1,45!).
 
 6. FORMATO DE RESPOSTA OBRIGATÓRIO:
 Sua resposta inteira DEVE SER EXCLUSIVAMENTE UM OBJETO JSON VÁLIDO.
@@ -207,7 +215,10 @@ Sua resposta inteira DEVE SER EXCLUSIVAMENTE UM OBJETO JSON VÁLIDO.
         if (lower.includes('segunda') || lower.includes('acém') || lower.includes('acem')) return 22.90;
         if (lower.includes('carne') || lower.includes('moída') || lower.includes('bovina')) return 24.90;
         if (lower.includes('doritos') || lower.includes('salgadinho')) return 10.90;
-        if (lower.includes('açúcar') || lower.includes('acucar')) return 17.50;
+        if (lower.includes('açúcar') || lower.includes('acucar')) {
+          if (lower.includes('1kg') || lower.includes('1 kg')) return 2.69;
+          return 13.50;
+        }
         if (lower.includes('leite')) return 4.89;
         if (lower.includes('óleo') || lower.includes('oleo')) return 6.49;
         if (lower.includes('café') || lower.includes('cafe')) return 18.90;

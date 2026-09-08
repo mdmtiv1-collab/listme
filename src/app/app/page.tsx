@@ -831,7 +831,10 @@ export default function AppPage() {
             if (lower.includes('feij')) return 5.90;
             if (lower.includes('carne') || lower.includes('moída') || lower.includes('bovina')) return 24.90;
             if (lower.includes('doritos') || lower.includes('salgadinho')) return 10.90;
-            if (lower.includes('açúcar') || lower.includes('acucar')) return 17.50;
+            if (lower.includes('açúcar') || lower.includes('acucar')) {
+              if (lower.includes('1kg') || lower.includes('1 kg')) return 2.69;
+              return 13.50;
+            }
             if (lower.includes('leite')) return 4.89;
             if (lower.includes('óleo') || lower.includes('oleo')) return 6.49;
             if (lower.includes('café') || lower.includes('cafe')) return 18.90;
@@ -877,7 +880,10 @@ export default function AppPage() {
           if (lower.includes('feij')) return 5.90;
           if (lower.includes('carne') || lower.includes('moída') || lower.includes('bovina')) return 24.90;
           if (lower.includes('doritos') || lower.includes('salgadinho')) return 10.90;
-          if (lower.includes('açúcar') || lower.includes('acucar')) return 17.50;
+          if (lower.includes('açúcar') || lower.includes('acucar')) {
+            if (lower.includes('1kg') || lower.includes('1 kg')) return 2.69;
+            return 13.50;
+          }
           if (lower.includes('leite')) return 4.89;
           if (lower.includes('óleo') || lower.includes('oleo')) return 6.49;
           if (lower.includes('café') || lower.includes('cafe')) return 18.90;
