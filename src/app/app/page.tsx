@@ -31,6 +31,7 @@ import {
   ShieldCheck,
   FileText,
   CheckCheck,
+  CheckCircle2,
   Receipt,
   LogOut
 } from 'lucide-react';
@@ -39,6 +40,7 @@ import confetti from 'canvas-confetti';
 import { ListItem, MarketComparison, ChatMessage, ExpenseRecord, ActiveTab } from '@/types';
 import { getMarketsForLocation } from '@/data/regionalMarkets';
 import { extractGroceryItems } from '@/utils/groceryParser';
+import { groupItemsByAisles, formatListByAisleForWhatsApp } from '@/utils/supermarketAisles';
 import { getDailyQuote, DailyQuote, DAILY_QUOTES } from '@/data/dailyQuotes';
 import AudioRecorder from '@/components/AudioRecorder';
 import PhotoUploadModal from '@/components/PhotoUploadModal';
@@ -152,6 +154,7 @@ export default function AppPage() {
   const [newExpenseNotes, setNewExpenseNotes] = useState('');
   const [lastEstimatedTotal, setLastEstimatedTotal] = useState<number>(0);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [listViewMode, setListViewMode] = useState<'aisles' | 'flat'>('aisles');
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -597,6 +600,11 @@ export default function AppPage() {
   const totalEstimatedApp = expenses.reduce((sum, e) => sum + (e.estimatedTotal || e.totalPaid), 0);
   const totalRealEconomy = Number((totalEstimatedApp - totalSpentReal).toFixed(2));
 
+  // Agrupamento Inteligente por Corredores de Supermercado (Rota Física de Mercado)
+  const aisleGroups = groupItemsByAisles(items);
+  const activeAislesCount = aisleGroups.filter((g) => g.pendingItems.length > 0).length;
+  const completedAislesCount = aisleGroups.filter((g) => g.isFullyChecked).length;
+
   // Fallback local se estiver offline ou falhar a requisição
   const fallbackLocalQuote = (text: string, loadingId: string) => {
     const isQuestion = text.includes('?') || /\b(compensa|qual|onde|quanto|como|vale a pena|melhor|dúvida|marca)\b/i.test(text);
@@ -995,11 +1003,12 @@ export default function AppPage() {
       return;
     }
 
-    const listText = items
-      .map((item) => `${item.checked ? '✅' : '⬜'} ${item.quantity}${item.unit} ${item.name} (${item.bestMarket?.name}: R$ ${((item.bestMarket?.price || 0) * item.quantity).toFixed(2)})`)
-      .join('\n');
-
-    const shareMessage = `*LIST.ME — Lista de Compras*\nResidência: ${houseName} (${city}, ${stateCode})\nMelhor opção: ${markets[0]?.marketName || 'Mercado'} (Total aprox: R$ ${totalBasketValue.toFixed(2).replace('.', ',')})\n\n${listText}\n\n👉 Acompanhe ao vivo no app: https://list.me/app`;
+    const shareMessage = formatListByAisleForWhatsApp(
+      items,
+      markets[0]?.marketName || 'Mercado Vencedor',
+      totalBasketValue,
+      city ? `${city}, ${stateCode}` : undefined
+    );
 
     window.open(`https://wa.me/?text=${encodeURIComponent(shareMessage)}`, '_blank');
   };
@@ -1605,6 +1614,41 @@ export default function AppPage() {
                 </button>
               </div>
 
+              {/* Alternador de Visualização: Rota de Mercado vs Lista Completa */}
+              {items.length > 0 && (
+                <div className="flex items-center gap-1 p-1 bg-white hairline-border rounded-2xl shadow-xs">
+                  <button
+                    onClick={() => setListViewMode('aisles')}
+                    className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                      listViewMode === 'aisles'
+                        ? 'bg-neutral-950 text-white shadow-xs'
+                        : 'text-neutral-600 hover:text-neutral-950'
+                    }`}
+                  >
+                    <Navigation size={12} className={listViewMode === 'aisles' ? 'text-[#84E000]' : ''} />
+                    <span>Rota de Mercado</span>
+                    {activeAislesCount > 0 && (
+                      <span className={`text-[9.5px] px-1.5 py-0.2 rounded-full font-mono ${
+                        listViewMode === 'aisles' ? 'bg-[#84E000] text-neutral-950' : 'bg-neutral-100 text-neutral-600'
+                      }`}>
+                        {activeAislesCount} {activeAislesCount === 1 ? 'corredor' : 'corredores'}
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setListViewMode('flat')}
+                    className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                      listViewMode === 'flat'
+                        ? 'bg-neutral-950 text-white shadow-xs'
+                        : 'text-neutral-600 hover:text-neutral-950'
+                    }`}
+                  >
+                    <CheckSquare size={12} />
+                    <span>Todos ({pendingItemsCount})</span>
+                  </button>
+                </div>
+              )}
+
               {items.length === 0 ? (
                 <div className="bg-white hairline-border p-7 rounded-[28px] text-center shadow-card my-6">
                   <div className="w-10 h-10 rounded-2xl bg-[#F4FCE3] text-[#497D00] flex items-center justify-center mx-auto mb-2.5">
@@ -1645,6 +1689,26 @@ export default function AppPage() {
                     </p>
                   </div>
 
+                  {/* Guia Visual da Rota de Mercado */}
+                  {listViewMode === 'aisles' && activeAislesCount > 0 && (
+                    <div className="bg-[#F4FCE3]/90 border border-[#84E000]/35 rounded-2xl p-2.5 px-3 flex items-center justify-between text-xs shadow-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">🧭</span>
+                        <div>
+                          <span className="font-bold text-neutral-900 block text-[11px] leading-tight">
+                            Rota sequencial de corredores
+                          </span>
+                          <span className="text-[10px] text-[#497D00] font-semibold">
+                            Siga a ordem dos corredores para não precisar voltar pelo mercado!
+                          </span>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-mono font-bold text-neutral-700 bg-white/90 px-2.5 py-1 rounded-full border border-black/5 shadow-xs shrink-0">
+                        {completedItemsCount}/{items.length} pegos
+                      </span>
+                    </div>
+                  )}
+
                   {/* Aviso Inteligente na Lista */}
                   {smartTip && (
                     <div className="bg-white hairline-border rounded-[20px] p-3.5 shadow-card border-l-4 border-l-[#84E000] flex items-start gap-2.5">
@@ -1660,61 +1724,164 @@ export default function AppPage() {
                     </div>
                   )}
 
-                  <div className="space-y-2">
-                    <h4 className="text-[11px] font-mono font-semibold uppercase tracking-wider text-neutral-400">
-                      Pendentes ({pendingItemsCount})
-                    </h4>
+                  {/* RENDERIZAÇÃO DOS ITENS PENDENTES */}
+                  {listViewMode === 'aisles' ? (
+                    <div className="space-y-3">
+                      {aisleGroups
+                        .filter((group) => group.pendingItems.length > 0)
+                        .map((group) => (
+                          <div
+                            key={group.aisle.id}
+                            className="bg-white hairline-border rounded-[22px] p-3.5 shadow-card space-y-2.5 transition-all duration-200"
+                          >
+                            {/* Cabeçalho do Corredor */}
+                            <div className="flex items-center justify-between border-b border-black/[0.04] pb-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-lg leading-none">{group.aisle.emoji}</span>
+                                <div>
+                                  <div className="flex items-center gap-1.5">
+                                    <span className={`text-[8.5px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${group.aisle.badgeBg} ${group.aisle.badgeText}`}>
+                                      {group.aisle.corredorTitle.split(' · ')[0]}
+                                    </span>
+                                    <span className="text-[9.5px] text-neutral-400 font-mono">
+                                      {group.aisle.shortName}
+                                    </span>
+                                  </div>
+                                  <h3 className="text-xs font-bold text-neutral-900 leading-tight mt-0.5">
+                                    {group.aisle.name}
+                                  </h3>
+                                </div>
+                              </div>
 
-                    {items
-                      .filter((item) => !item.checked)
-                      .map((item) => (
-                        <div
-                          key={item.id}
-                          className="bg-white hairline-border p-3.5 rounded-[20px] shadow-card flex items-center justify-between gap-2"
-                        >
-                          <label className="flex items-center gap-3 cursor-pointer flex-1 min-w-0">
-                            <input
-                              type="checkbox"
-                              checked={item.checked}
-                              onChange={() => toggleItemChecked(item.id)}
-                              className="w-4 h-4 rounded accent-[#84E000] cursor-pointer"
-                            />
-                            <div className="truncate">
-                              <span className="text-xs font-semibold text-neutral-900 block truncate">
-                                {item.matchedItem || item.name}
-                              </span>
-                              <span className="text-[11px] text-neutral-400 font-mono">
-                                {item.bestMarket?.name} · R$ {item.bestMarket?.price.toFixed(2).replace('.', ',')}
+                              <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-600 shrink-0">
+                                {group.pendingItems.length} {group.pendingItems.length === 1 ? 'item' : 'itens'}
                               </span>
                             </div>
-                          </label>
 
-                          <div className="flex items-center gap-1 shrink-0">
-                            <button
-                              onClick={() => updateQuantity(item.id, -1)}
-                              className="w-6 h-6 rounded-lg bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-xs flex items-center justify-center transition"
-                            >
-                              <Minus size={11} />
-                            </button>
-                            <span className="w-5 text-center text-xs font-mono font-semibold text-neutral-900">
-                              {item.quantity}
-                            </span>
-                            <button
-                              onClick={() => updateQuantity(item.id, 1)}
-                              className="w-6 h-6 rounded-lg bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-xs flex items-center justify-center transition"
-                            >
-                              <Plus size={11} />
-                            </button>
-                            <button
-                              onClick={() => deleteItem(item.id)}
-                              className="p-1 text-neutral-400 hover:text-red-600 transition ml-1"
-                            >
-                              <Trash2 size={13} />
-                            </button>
+                            {/* Lista de Produtos do Corredor */}
+                            <div className="space-y-1.5">
+                              {group.pendingItems.map((item) => (
+                                <div
+                                  key={item.id}
+                                  className="p-2.5 rounded-xl bg-neutral-50/70 hover:bg-neutral-50 border border-black/[0.03] flex items-center justify-between gap-2 transition"
+                                >
+                                  <label className="flex items-center gap-2.5 cursor-pointer flex-1 min-w-0">
+                                    <input
+                                      type="checkbox"
+                                      checked={item.checked}
+                                      onChange={() => toggleItemChecked(item.id)}
+                                      className="w-4 h-4 rounded accent-[#84E000] cursor-pointer shrink-0"
+                                    />
+                                    <div className="truncate">
+                                      <span className="text-xs font-semibold text-neutral-900 block truncate">
+                                        {item.matchedItem || item.name}
+                                      </span>
+                                      <span className="text-[10.5px] text-neutral-400 font-mono">
+                                        {item.bestMarket?.name} · R$ {item.bestMarket?.price.toFixed(2).replace('.', ',')}
+                                      </span>
+                                    </div>
+                                  </label>
+
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    <button
+                                      onClick={() => updateQuantity(item.id, -1)}
+                                      className="w-6 h-6 rounded-lg bg-white border border-black/10 hover:bg-neutral-100 text-neutral-700 text-xs flex items-center justify-center transition"
+                                      title="Diminuir quantidade"
+                                    >
+                                      <Minus size={11} />
+                                    </button>
+                                    <span className="w-5 text-center text-xs font-mono font-semibold text-neutral-900">
+                                      {item.quantity}
+                                    </span>
+                                    <button
+                                      onClick={() => updateQuantity(item.id, 1)}
+                                      className="w-6 h-6 rounded-lg bg-white border border-black/10 hover:bg-neutral-100 text-neutral-700 text-xs flex items-center justify-center transition"
+                                      title="Aumentar quantidade"
+                                    >
+                                      <Plus size={11} />
+                                    </button>
+                                    <button
+                                      onClick={() => deleteItem(item.id)}
+                                      className="p-1 text-neutral-400 hover:text-red-600 transition ml-0.5"
+                                      title="Remover produto"
+                                    >
+                                      <Trash2 size={12} />
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
                           </div>
+                        ))}
+
+                      {/* Notificação de Corredores Concluídos */}
+                      {completedAislesCount > 0 && (
+                        <div className="p-2.5 rounded-2xl bg-emerald-50/70 border border-emerald-200/80 text-[11px] text-emerald-800 flex items-center gap-2 shadow-xs">
+                          <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />
+                          <span>
+                            <strong>{completedAislesCount} {completedAislesCount === 1 ? 'corredor concluído' : 'corredores concluídos'}</strong> nesta compra!
+                          </span>
                         </div>
-                      ))}
-                  </div>
+                      )}
+                    </div>
+                  ) : (
+                    /* Modo Lista Plana */
+                    <div className="space-y-2">
+                      <h4 className="text-[11px] font-mono font-semibold uppercase tracking-wider text-neutral-400">
+                        Pendentes ({pendingItemsCount})
+                      </h4>
+
+                      {items
+                        .filter((item) => !item.checked)
+                        .map((item) => (
+                          <div
+                            key={item.id}
+                            className="bg-white hairline-border p-3.5 rounded-[20px] shadow-card flex items-center justify-between gap-2"
+                          >
+                            <label className="flex items-center gap-3 cursor-pointer flex-1 min-w-0">
+                              <input
+                                type="checkbox"
+                                checked={item.checked}
+                                onChange={() => toggleItemChecked(item.id)}
+                                className="w-4 h-4 rounded accent-[#84E000] cursor-pointer"
+                              />
+                              <div className="truncate">
+                                <span className="text-xs font-semibold text-neutral-900 block truncate">
+                                  {item.matchedItem || item.name}
+                                </span>
+                                <span className="text-[11px] text-neutral-400 font-mono">
+                                  {item.bestMarket?.name} · R$ {item.bestMarket?.price.toFixed(2).replace('.', ',')}
+                                </span>
+                              </div>
+                            </label>
+
+                            <div className="flex items-center gap-1 shrink-0">
+                              <button
+                                onClick={() => updateQuantity(item.id, -1)}
+                                className="w-6 h-6 rounded-lg bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-xs flex items-center justify-center transition"
+                              >
+                                <Minus size={11} />
+                              </button>
+                              <span className="w-5 text-center text-xs font-mono font-semibold text-neutral-900">
+                                {item.quantity}
+                              </span>
+                              <button
+                                onClick={() => updateQuantity(item.id, 1)}
+                                className="w-6 h-6 rounded-lg bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-xs flex items-center justify-center transition"
+                              >
+                                <Plus size={11} />
+                              </button>
+                              <button
+                                onClick={() => deleteItem(item.id)}
+                                className="p-1 text-neutral-400 hover:text-red-600 transition ml-1"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  )}
 
                   {completedItemsCount > 0 && (
                     <div className="space-y-2 pt-2">

@@ -98,7 +98,20 @@ DIRETRIZES FUNDAMENTAIS DE PREÇO, CESTA ÚNICA E LOCALIZAÇÃO:
    - É ESTRITAMENTE PROIBIDO CITAR OU ESCOLHER "Armazém da Família" OU QUALQUER PROGRAMA GOVERNAMENTAL/SOCIAL!
    - É ESTRITAMENTE PROIBIDO CITAR REDES DO INTERIOR DO ESTADO OU DE OUTROS ESTADOS que não existem em Colombo ou Curitiba (como Copacol, Lar, Coopavel, Amigão, Guanabara, Mundial, etc.). Use APENAS redes com lojas físicas na Grande Curitiba e Colombo.
 
-4. FORMATO DO "replyText" (SEM NENHUM LINK OU URL):
+4. REGRA DE CLASSIFICAÇÃO POR CORREDOR DO SUPERMERCADO (CATEGORIA):
+    - Cada produto no array "items" DEVE ter o campo "category" preenchido com um destes departamentos oficiais:
+      - "Bebidas" (refrigerantes, sucos, cervejas, energéticos, vinhos, água)
+      - "Hortifrúti" (frutas, verduras, legumes, temperos frescos, ovos)
+      - "Padaria" (pães, bolos, café, açúcar, achocolatados, biscoitos)
+      - "Mercearia" (arroz, feijão, trigo/farinhas, macarrão, óleos, azeite, molhos, sal, enlatados)
+      - "Carnes" (carne moída, bifes, frango, suínos, linguiça, peixes)
+      - "Laticínios" (leite, queijos, presunto, manteiga, iogurte, requeijão)
+      - "Congelados" (hambúrgueres, pizzas, lasanhas, sorvetes)
+      - "Higiene" (sabonete, shampoo, pasta de dente, desodorante, papel higiênico)
+      - "Limpeza" (sabão em pó/líquido, amaciante, detergente, desinfetante, água sanitária)
+      - "Bazar" (ração pet, carvão, fósforo, descartáveis)
+
+5. FORMATO DO "replyText" (SEM NENHUM LINK OU URL):
    - NUNCA inclua links markdown, URLs, colchetes com links nem referências como 【...】.
    - Não use asteriscos aleatórios soltos. Escreva de forma limpa, direta e organizada com negrito nos tópicos.
    - QUANDO O USUÁRIO MANDAR UMA LISTA DE COMPRAS:
@@ -149,7 +162,7 @@ Sua resposta inteira DEVE SER EXCLUSIVAMENTE UM OBJETO JSON VÁLIDO.
     {
       "name": "Nome do Produto",
       "matchedProduct": "Nome Comercial Completo",
-      "category": "Mercearia / Carnes / etc",
+      "category": "Bebidas | Hortifrúti | Padaria | Mercearia | Carnes | Laticínios | Congelados | Higiene | Limpeza | Bazar",
       "quantity": 1,
       "unit": "pct / kg",
       "bestMarket": "Nome da Loja Vencedora",

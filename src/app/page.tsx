@@ -304,7 +304,7 @@ export default function LandingPage() {
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           <div className="bg-white hairline-border p-6 rounded-[24px] shadow-card">
             <div className="w-10 h-10 rounded-2xl bg-neutral-950 text-[#84E000] flex items-center justify-center mb-4 font-mono font-bold">
               01
@@ -313,7 +313,7 @@ export default function LandingPage() {
               Dite ou envie foto
             </h3>
             <p className="text-xs text-neutral-500 leading-relaxed">
-              Fale pelo microfone enquanto olha a geladeira, envie foto da lista de papel ou digite o que precisa. A IA organiza tudo em segundos.
+              Fale pelo microfone enquanto olha a despensa, envie foto da lista de papel ou digite o que precisa. A IA organiza tudo em segundos.
             </p>
           </div>
 
@@ -322,22 +322,35 @@ export default function LandingPage() {
               02
             </div>
             <h3 className="text-base font-bold text-neutral-950 mb-2">
-              Cálculo da Compra Completa
+              Cálculo da Cesta Completa
             </h3>
             <p className="text-xs text-neutral-500 leading-relaxed">
-              O motor compara os preços de todas as redes locais e indica o mercado onde a sua lista completa sairá mais barata, poupando tempo e combustível.
+              O motor compara os preços de todas as redes locais e indica onde a compra inteira sai mais barata em uma só ida ao mercado.
+            </p>
+          </div>
+
+          <div className="bg-white hairline-border p-6 rounded-[24px] shadow-card border-t-2 border-t-[#84E000]">
+            <div className="w-10 h-10 rounded-2xl bg-[#84E000] text-neutral-950 flex items-center justify-center mb-4 font-mono font-bold shadow-xs">
+              03
+            </div>
+            <h3 className="text-base font-bold text-neutral-950 mb-2 flex items-center gap-1.5">
+              <span>Rota por Corredores</span>
+              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#84E000]/20 text-[#386000] uppercase font-bold">Novo</span>
+            </h3>
+            <p className="text-xs text-neutral-500 leading-relaxed">
+              Itens organizados na sequência física de compras (Bebidas, Hortifrúti, Mercearia/Trigo, Carnes e Limpeza). Sem andar pra trás no mercado!
             </p>
           </div>
 
           <div className="bg-white hairline-border p-6 rounded-[24px] shadow-card">
             <div className="w-10 h-10 rounded-2xl bg-neutral-950 text-[#84E000] flex items-center justify-center mb-4 font-mono font-bold">
-              03
+              04
             </div>
             <h3 className="text-base font-bold text-neutral-950 mb-2">
               Sincronia com a Família
             </h3>
             <p className="text-xs text-neutral-500 leading-relaxed">
-              No Plano Família, compartilhe com o parceiro(a) via WhatsApp. Os dois visualizam e atualizam os itens da mesma casa em tempo real.
+              Compartilhe a lista organizada por corredores no WhatsApp. Os dois acompanham e marcam itens da mesma casa em tempo real.
             </p>
           </div>
         </div>
