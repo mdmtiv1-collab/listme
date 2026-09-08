@@ -1,0 +1,7 @@
+node_modules 
+.next 
+out 
+out-* 
+*.zip 
+builds_backup 
+.env*.local 
