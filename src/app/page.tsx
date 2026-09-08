@@ -151,16 +151,16 @@ export default function LandingPage() {
           <div className="absolute inset-0 max-w-md mx-auto bg-[#84E000]/15 blur-3xl rounded-full transform -translate-y-4 pointer-events-none" />
 
           {/* Wrapper Centralizado com Âncora Direta no Celular */}
-          <div className="relative flex flex-col items-center pt-8 pb-8 sm:py-0">
+          <div className="relative flex flex-col items-center pt-2 pb-8 sm:py-0">
 
-            {/* Card Flutuante 1: Áudio & Reconhecimento de Voz (Superior Esquerdo) */}
-            <div className="flex absolute -top-10 sm:top-14 -left-3 sm:-left-48 md:-left-60 lg:-left-64 z-30 animate-float-slow items-start gap-1.5 sm:gap-3 bg-neutral-950/95 backdrop-blur-xl border border-white/15 p-2 sm:p-3.5 rounded-2xl shadow-[0_20px_45px_-10px_rgba(0,0,0,0.7)] w-[150px] sm:w-[225px] md:w-[245px] text-left hover:scale-105 hover:border-[#84E000]/50 transition-all duration-300 group cursor-default">
+            {/* Card Flutuante 1: Áudio & Reconhecimento de Voz (Lateral Esquerda no Mobile / Superior Esquerdo no Desktop) */}
+            <div className="flex absolute top-12 sm:top-14 -left-8 sm:-left-48 md:-left-60 lg:-left-64 z-30 animate-float-slow items-start gap-1.5 sm:gap-3 bg-neutral-950/95 backdrop-blur-xl border border-white/15 p-2 sm:p-3.5 rounded-2xl shadow-[0_20px_45px_-10px_rgba(0,0,0,0.7)] w-[140px] sm:w-[225px] md:w-[245px] text-left hover:scale-105 hover:border-[#84E000]/50 transition-all duration-300 group cursor-default">
               <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-xl bg-[#84E000]/15 text-[#84E000] border border-[#84E000]/30 flex items-center justify-center shrink-0 group-hover:bg-[#84E000] group-hover:text-neutral-950 transition mt-0.5">
                 <Mic size={12} className="animate-pulse sm:w-3.5 sm:h-3.5" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-1 mb-0.5 sm:mb-1">
-                  <span className="text-[7.5px] sm:text-[9px] font-mono uppercase font-bold text-[#84E000] tracking-wider">
+                  <span className="text-[7px] sm:text-[9px] font-mono uppercase font-bold text-[#84E000] tracking-wider">
                     ÁUDIO RECONHECIDO
                   </span>
                   <div className="flex items-end gap-0.5 h-2 sm:h-3">
@@ -169,10 +169,10 @@ export default function LandingPage() {
                     <span className="w-0.5 bg-[#84E000] rounded-full soundwave-bar-3" />
                   </div>
                 </div>
-                <p className="text-[9px] sm:text-xs text-neutral-200 font-medium leading-tight truncate">
+                <p className="text-[8.5px] sm:text-xs text-neutral-200 font-medium leading-tight truncate">
                   “2 leites, alcatra e sabão...”
                 </p>
-                <span className="inline-flex items-center gap-1 text-[7.5px] sm:text-[9px] font-mono text-neutral-400 mt-0.5">
+                <span className="inline-flex items-center gap-1 text-[7px] sm:text-[9px] font-mono text-neutral-400 mt-0.5">
                   <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-[#84E000]" />
                   4 itens organizados
                 </span>
@@ -180,7 +180,7 @@ export default function LandingPage() {
             </div>
 
             {/* Card Flutuante 2: Comparação de Mercado & Economia (Inferior Direito) */}
-            <div className="flex absolute -bottom-7 sm:bottom-16 md:bottom-20 -right-3 sm:-right-48 md:-right-60 lg:-right-64 z-30 animate-float-reverse flex-col gap-0.5 sm:gap-2 bg-neutral-950/95 backdrop-blur-xl border border-[#84E000]/40 p-2 sm:p-3.5 rounded-2xl shadow-[0_20px_45px_-10px_rgba(0,0,0,0.7)] w-[165px] sm:w-[230px] md:w-[255px] text-left hover:scale-105 hover:border-[#84E000] transition-all duration-300 ring-1 ring-[#84E000]/20 cursor-default">
+            <div className="flex absolute -bottom-7 sm:bottom-16 md:bottom-20 -right-6 sm:-right-48 md:-right-60 lg:-right-64 z-30 animate-float-reverse flex-col gap-0.5 sm:gap-2 bg-neutral-950/95 backdrop-blur-xl border border-[#84E000]/40 p-2 sm:p-3.5 rounded-2xl shadow-[0_20px_45px_-10px_rgba(0,0,0,0.7)] w-[165px] sm:w-[230px] md:w-[255px] text-left hover:scale-105 hover:border-[#84E000] transition-all duration-300 ring-1 ring-[#84E000]/20 cursor-default">
               <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-1 sm:pb-1.5">
                 <span className="text-[7.5px] sm:text-[9px] font-mono uppercase text-neutral-400 font-bold">
                   COMPRA MAIS BARATA
@@ -215,16 +215,16 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Card Flutuante 3: Redes Locais da Região (Superior Direito - Mobile & Desktop) */}
-            <div className="flex absolute top-7 sm:top-6 -right-3 sm:-right-36 md:-right-40 lg:-right-44 z-20 animate-float-slow items-center gap-1.5 sm:gap-2.5 bg-white/95 text-neutral-900 backdrop-blur-md border border-black/10 py-1 sm:py-2 px-2 sm:px-3.5 rounded-full shadow-[0_15px_30px_-5px_rgba(0,0,0,0.25)] hover:scale-105 transition-all cursor-default">
+            {/* Card Flutuante 3: Redes Locais da Região (Lateral Direita no Mobile / Superior Direito no Desktop) */}
+            <div className="flex absolute top-16 sm:top-6 -right-8 sm:-right-36 md:-right-40 lg:-right-44 z-20 animate-float-slow items-center gap-1.5 sm:gap-2.5 bg-white/95 text-neutral-900 backdrop-blur-md border border-black/10 py-1.5 sm:py-2 px-2.5 sm:px-3.5 rounded-full shadow-[0_15px_30px_-5px_rgba(0,0,0,0.25)] hover:scale-105 transition-all cursor-default">
               <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-[#84E000]/20 text-[#386000] flex items-center justify-center shrink-0">
                 <MapPin size={11} className="sm:w-3.5 sm:h-3.5" />
               </div>
               <div className="text-left min-w-0">
-                <span className="text-[8.5px] sm:text-[10px] font-bold block leading-none text-neutral-900">
+                <span className="text-[8px] sm:text-[10px] font-bold block leading-none text-neutral-900">
                   Mercados da Região
                 </span>
-                <span className="text-[7.5px] sm:text-[9px] font-mono text-neutral-500 block mt-0.5 whitespace-nowrap">
+                <span className="text-[7px] sm:text-[9px] font-mono text-neutral-500 block mt-0.5 whitespace-nowrap">
                   Atacadão · Assaí · Carrefour
                 </span>
               </div>
@@ -232,7 +232,7 @@ export default function LandingPage() {
             </div>
 
             {/* Chassi do Celular (Hardware de Luxo) */}
-            <div className="relative z-10 w-full max-w-[250px] sm:max-w-[315px] bg-neutral-950 p-2 sm:p-3 rounded-[44px] sm:rounded-[52px] shadow-[0_30px_70px_-15px_rgba(0,0,0,0.5)] border-4 sm:border-[6px] border-neutral-800 ring-1 ring-white/20">
+            <div className="relative z-10 w-full max-w-[240px] sm:max-w-[315px] bg-neutral-950 p-2 sm:p-3 rounded-[44px] sm:rounded-[52px] shadow-[0_30px_70px_-15px_rgba(0,0,0,0.5)] border-4 sm:border-[6px] border-neutral-800 ring-1 ring-white/20">
               
               {/* Botões Laterais (Volume e Power) */}
               <div className="hidden sm:block absolute -left-[9px] top-28 w-[4px] h-9 bg-neutral-700 rounded-l-md" />
