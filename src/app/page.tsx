@@ -81,8 +81,8 @@ export default function LandingPage() {
       
       {/* Top Header & Navigation */}
       <header className="px-5 sm:px-8 py-4 max-w-6xl w-full mx-auto flex items-center justify-between sticky top-0 bg-[#F8F7F4]/90 backdrop-blur-md z-40 border-b border-black/[0.04]">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl overflow-hidden shadow-xs border border-black/10 bg-white shrink-0">
+        <Link href="/" className="flex items-center gap-2.5 group cursor-pointer">
+          <div className="w-9 h-9 rounded-xl overflow-hidden shadow-xs border border-black/10 bg-white shrink-0 group-hover:scale-105 transition-transform duration-200">
             <Image
               src="/logo.png"
               alt="LIST.ME Logo"
@@ -92,10 +92,10 @@ export default function LandingPage() {
               priority
             />
           </div>
-          <span className="font-sans text-xl font-bold tracking-tight text-neutral-950">
+          <span className="font-sans text-2xl font-black tracking-tight text-black logo-chromatic select-none">
             list<span className="text-[#84E000]">.me</span>
           </span>
-        </div>
+        </Link>
 
         <nav className="flex items-center gap-4 sm:gap-6 text-xs font-medium text-neutral-500">
           <a href="#como-funciona" className="hover:text-neutral-950 transition hidden sm:inline-block">Como Funciona</a>
@@ -371,7 +371,7 @@ export default function LandingPage() {
               </div>
               <div>
                 <span className="font-bold text-xs sm:text-sm text-neutral-900 block leading-tight">
-                  Assistente list.me
+                  Assistente <span className="logo-chromatic-sm text-black">list<span className="text-[#84E000]">.me</span></span>
                 </span>
                 <span className="text-[10px] text-[#497D00] font-medium flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#84E000] animate-pulse" />
@@ -1203,7 +1203,7 @@ export default function LandingPage() {
               className="w-full h-full object-contain"
             />
           </div>
-          <span className="font-semibold text-neutral-900">
+          <span className="font-sans text-base font-black tracking-tight text-neutral-950 logo-chromatic-sm select-none">
             list<span className="text-[#84E000]">.me</span>
           </span>
           <span>— Inteligência de compras para sua casa.</span>

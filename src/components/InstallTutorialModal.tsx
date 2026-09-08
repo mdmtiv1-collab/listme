@@ -57,7 +57,7 @@ export default function InstallTutorialModal({ isOpen, onClose }: InstallTutoria
                 ATALHO NO CELULAR
               </span>
               <h3 className="font-sans text-sm font-bold text-neutral-900 leading-none">
-                Instale o LIST.ME
+                Instale o <span className="logo-chromatic-sm text-black">list<span className="text-[#84E000]">.me</span></span>
               </h3>
             </div>
           </div>
