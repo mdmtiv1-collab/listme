@@ -2,7 +2,7 @@ const path = require('path');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
+  ...(process.env.STATIC_EXPORT === 'true' ? { output: 'export' } : {}),
   images: {
     unoptimized: true,
   },
