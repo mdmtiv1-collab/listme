@@ -27,7 +27,22 @@ export async function POST(req: NextRequest) {
       ? ` (Coordenadas GPS: Lat ${latitude}, Lon ${longitude})`
       : '';
 
+    const now = new Date();
+    const formattedDate = now.toLocaleDateString('pt-BR', {
+      weekday: 'long',
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric'
+    });
+
     const prompt = `Você é o Consultor de Compras Pessoal e Assistente Inteligente do aplicativo LIST.ME.
+DATA ATUAL DA CONSULTA:
+- Hoje é: ${formattedDate}.
+- DINAMISMO TEMPORAL OBRIGATÓRIO: Ofertas e encartes de supermercado mudam semanalmente e diariamente (ofertas do dia, quarta de feira, quinta da carne, festival do atacarejo, etc.).
+- Sempre faça uma busca web ativa por ENCARTES, TABLOIDES E OFERTAS VIGENTES DESTA SEMANA (${formattedDate}) para os produtos em ${city} e Curitiba.
+- Se algum item estiver em promoção no encarte vigente desta semana (ex: açúcar que costuma ser R$ 13 estiver em oferta por R$ 8,99 ou R$ 9,90; carne moída em promoção por R$ 19,90), USE SEMPRE O PREÇO PROMOCIONAL VIGENTE! A oferta real ativa tem PRIORIDADE MÁXIMA.
+- Se o produto não estiver em oferta no encarte da semana, use o preço regular de prateleira praticado pela rede.
+
 LOCALIZAÇÃO DO USUÁRIO EM TEMPO REAL (GPS DINÂMICO):
 - Ponto onde o usuário está fisicamente agora: ${locationDesc}${gpsInfo}
 - Raio de busca: ${radiusKm}km ao redor desta localização atual.
