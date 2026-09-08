@@ -45,13 +45,14 @@ DIRETRIZES FUNDAMENTAIS DE PREÇO, CESTA ÚNICA E LOCALIZAÇÃO:
    - É TOTALMENTE PROIBIDO retornar qualquer produto com preço 0, 0.00 ou null!
    - TODO E QUALQUER item da lista DEVE ter um preço válido maior que zero (bestPrice > 0).
    - Se um determinado produto não estiver com encarte de oferta divulgado hoje no Google (ex: Doritos, arroz específico, etc.), use OBRIGATORIAMENTE o preço médio de prateleira realista praticado pela rede na região:
-     - Arroz 5kg: R$ 24,90 a R$ 28,90
-     - Feijão 1kg: R$ 5,20 a R$ 6,80
-     - Carne moída 1kg: R$ 21,90 a R$ 27,90
-     - Salgadinho Doritos 140g: R$ 9,90 a R$ 12,50
-     - Açúcar 5kg: R$ 16,90 a R$ 19,90
-     - Óleo de Soja 900ml: R$ 5,90 a R$ 6,90
-     - Leite Integral 1L: R$ 4,50 a R$ 5,20
+      - Arroz 5kg: R$ 24,90 a R$ 28,90
+      - Feijão 1kg: R$ 5,20 a R$ 6,80
+      - Carne moída de SEGUNDA 1kg (acém/músculo/paleta): R$ 21,90 a R$ 25,90
+      - Carne moída de PRIMEIRA 1kg (patinho/alcatra/coxão mole): R$ 32,90 a R$ 38,90
+      - Salgadinho Doritos 140g: R$ 9,90 a R$ 12,50
+      - Açúcar 5kg: R$ 16,90 a R$ 19,90
+      - Óleo de Soja 900ml: R$ 5,90 a R$ 6,90
+      - Leite Integral 1L: R$ 4,50 a R$ 5,20
    - 100% dos produtos da lista DEVEM ter preços reais, coerentes e positivos!
 
 2. REGRA SUPREMA 2: CESTA CONSOLIDADA EM UMA ÚNICA LOJA (COMPRA COMPLETA):
@@ -89,7 +90,11 @@ DIRETRIZES FUNDAMENTAIS DE PREÇO, CESTA ÚNICA E LOCALIZAÇÃO:
      **Economia:** Você economiza R$ Z,ZZ escolhendo a opção recomendada.
 
 5. ACESSO ILIMITADO A PRODUTOS, CORTES E MARCAS:
-   - Você tem acesso irrestrito para pesquisar QUALQUER item vendido em supermercados: mercearia, carnes, hortifrúti, higiene, limpeza e todas as marcas.
+   - Você tem acesso irrestrito para pesquisar QUALQUER item: cortes bovinos, frango, mercearia, hortifrúti, limpeza e todas as marcas.
+   - DIFERENCIAÇÃO RIGOROSA DE CARNES E CORTES (PRIMEIRA vs SEGUNDA):
+     - Carne moída de PRIMEIRA (patinho/alcatra) é corte nobre, magro e de valor mais alto (R$ 32,90 a R$ 38,90/kg).
+     - Carne moída de SEGUNDA (acém/músculo/paleta) é corte popular e mais barato (R$ 21,90 a R$ 25,90/kg).
+     - NUNCA coloque o mesmo preço para carne moída de primeira e carne moída de segunda! Respeite rigorosamente a qualidade solicitada pelo usuário.
 
 6. FORMATO DE RESPOSTA OBRIGATÓRIO:
 Sua resposta inteira DEVE SER EXCLUSIVAMENTE UM OBJETO JSON VÁLIDO.
@@ -198,6 +203,8 @@ Sua resposta inteira DEVE SER EXCLUSIVAMENTE UM OBJETO JSON VÁLIDO.
         const lower = (name || '').toLowerCase();
         if (lower.includes('arroz')) return 25.90;
         if (lower.includes('feij')) return 5.90;
+        if (lower.includes('primeira') || lower.includes('patinho') || lower.includes('alcatra')) return 34.90;
+        if (lower.includes('segunda') || lower.includes('acém') || lower.includes('acem')) return 22.90;
         if (lower.includes('carne') || lower.includes('moída') || lower.includes('bovina')) return 24.90;
         if (lower.includes('doritos') || lower.includes('salgadinho')) return 10.90;
         if (lower.includes('açúcar') || lower.includes('acucar')) return 17.50;

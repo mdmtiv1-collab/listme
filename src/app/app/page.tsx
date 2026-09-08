@@ -825,6 +825,8 @@ export default function AppPage() {
             const num = Number(rawPrice);
             if (!isNaN(num) && num > 0) return Number(num.toFixed(2));
             const lower = (productName || '').toLowerCase();
+            if (lower.includes('primeira') || lower.includes('patinho') || lower.includes('alcatra')) return 34.90;
+            if (lower.includes('segunda') || lower.includes('acém') || lower.includes('acem')) return 22.90;
             if (lower.includes('arroz')) return 25.90;
             if (lower.includes('feij')) return 5.90;
             if (lower.includes('carne') || lower.includes('moída') || lower.includes('bovina')) return 24.90;
@@ -869,6 +871,8 @@ export default function AppPage() {
           const num = Number(rawPrice);
           if (!isNaN(num) && num > 0) return Number(num.toFixed(2));
           const lower = (productName || '').toLowerCase();
+          if (lower.includes('primeira') || lower.includes('patinho') || lower.includes('alcatra')) return 34.90;
+          if (lower.includes('segunda') || lower.includes('acém') || lower.includes('acem')) return 22.90;
           if (lower.includes('arroz')) return 25.90;
           if (lower.includes('feij')) return 5.90;
           if (lower.includes('carne') || lower.includes('moída') || lower.includes('bovina')) return 24.90;
