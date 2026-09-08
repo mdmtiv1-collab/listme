@@ -74,6 +74,7 @@ const STRIPE_CHECKOUT_LINKS = CAKTO_CHECKOUT_LINKS;
 export default function LandingPage() {
   const [pricingTier, setPricingTier] = useState<'individual' | 'family'>('individual');
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
+  const [monthlySpend, setMonthlySpend] = useState<number>(1500);
 
   return (
     <div className="min-h-screen bg-[#F8F7F4] text-neutral-900 flex flex-col selection:bg-[#84E000] selection:text-black font-sans overflow-x-hidden">
@@ -153,9 +154,9 @@ export default function LandingPage() {
           <div className="relative flex flex-col items-center">
 
             {/* Card Flutuante 1: Áudio & Reconhecimento de Voz (Superior Esquerdo) */}
-            <div className="flex absolute -top-8 sm:top-14 -left-4 sm:-left-48 md:-left-60 lg:-left-64 z-30 animate-float-slow items-start gap-2 sm:gap-3 bg-neutral-950/95 backdrop-blur-xl border border-white/15 p-2.5 sm:p-3.5 rounded-2xl shadow-[0_20px_45px_-10px_rgba(0,0,0,0.7)] w-[190px] sm:w-[225px] md:w-[245px] text-left hover:scale-105 hover:border-[#84E000]/50 transition-all duration-300 group cursor-default">
+            <div className="flex absolute -top-7 sm:top-14 -left-2 sm:-left-48 md:-left-60 lg:-left-64 z-30 animate-float-slow items-start gap-2 sm:gap-3 bg-neutral-950/95 backdrop-blur-xl border border-white/15 p-2.5 sm:p-3.5 rounded-2xl shadow-[0_20px_45px_-10px_rgba(0,0,0,0.7)] w-[180px] sm:w-[225px] md:w-[245px] text-left hover:scale-105 hover:border-[#84E000]/50 transition-all duration-300 group cursor-default">
               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#84E000]/15 text-[#84E000] border border-[#84E000]/30 flex items-center justify-center shrink-0 group-hover:bg-[#84E000] group-hover:text-neutral-950 transition">
-                <Mic size={14} className="animate-pulse" />
+                <Mic size={13} className="animate-pulse sm:w-3.5 sm:h-3.5" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-1 mb-0.5 sm:mb-1">
@@ -168,18 +169,18 @@ export default function LandingPage() {
                     <span className="w-0.5 bg-[#84E000] rounded-full soundwave-bar-3" />
                   </div>
                 </div>
-                <p className="text-[10px] sm:text-xs text-neutral-200 font-medium leading-tight">
-                  “2 leites, pão de alho, alcatra e sabão em pó...”
+                <p className="text-[10px] sm:text-xs text-neutral-200 font-medium leading-tight line-clamp-2">
+                  “2 leites, pão de alho, alcatra e sabão...”
                 </p>
                 <span className="inline-flex items-center gap-1 text-[8px] sm:text-[9px] font-mono text-neutral-400 mt-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#84E000]" />
-                  IA separou 4 itens na lista
+                  4 itens organizados
                 </span>
               </div>
             </div>
 
             {/* Card Flutuante 2: Comparação de Mercado & Economia (Inferior Direito) */}
-            <div className="flex absolute -bottom-8 sm:bottom-16 md:bottom-20 -right-4 sm:-right-48 md:-right-60 lg:-right-64 z-30 animate-float-reverse flex-col gap-1 sm:gap-2 bg-neutral-950/95 backdrop-blur-xl border border-[#84E000]/40 p-2.5 sm:p-3.5 rounded-2xl shadow-[0_20px_45px_-10px_rgba(0,0,0,0.7)] w-[190px] sm:w-[230px] md:w-[255px] text-left hover:scale-105 hover:border-[#84E000] transition-all duration-300 ring-1 ring-[#84E000]/20 cursor-default">
+            <div className="flex absolute -bottom-7 sm:bottom-16 md:bottom-20 -right-2 sm:-right-48 md:-right-60 lg:-right-64 z-30 animate-float-reverse flex-col gap-1 sm:gap-2 bg-neutral-950/95 backdrop-blur-xl border border-[#84E000]/40 p-2 sm:p-3.5 rounded-2xl shadow-[0_20px_45px_-10px_rgba(0,0,0,0.7)] w-[185px] sm:w-[230px] md:w-[255px] text-left hover:scale-105 hover:border-[#84E000] transition-all duration-300 ring-1 ring-[#84E000]/20 cursor-default">
               <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-1 sm:pb-1.5">
                 <span className="text-[8px] sm:text-[9px] font-mono uppercase text-neutral-400 font-bold">
                   COMPRA MAIS BARATA
@@ -189,8 +190,8 @@ export default function LandingPage() {
                 </span>
               </div>
 
-              <div className="space-y-1">
-                <div className="flex items-center justify-between text-[11px] sm:text-xs">
+              <div className="space-y-0.5 sm:space-y-1">
+                <div className="flex items-center justify-between text-[10px] sm:text-xs">
                   <span className="font-bold text-white flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-[#84E000]" />
                     Atacadão
@@ -199,13 +200,13 @@ export default function LandingPage() {
                     R$ 94,80
                   </span>
                 </div>
-                <div className="flex items-center justify-between text-[10px] sm:text-[11px] text-neutral-400">
+                <div className="flex items-center justify-between text-[9px] sm:text-[11px] text-neutral-400">
                   <span>Carrefour</span>
                   <span className="line-through font-mono">R$ 138,20</span>
                 </div>
               </div>
 
-              <div className="pt-1 sm:pt-1.5 border-t border-white/10 flex items-center justify-between text-[9px] sm:text-[10px] font-mono text-[#84E000]">
+              <div className="pt-1 sm:pt-1.5 border-t border-white/10 flex items-center justify-between text-[8px] sm:text-[10px] font-mono text-[#84E000]">
                 <span className="flex items-center gap-1">
                   <TrendingDown size={11} />
                   Economia:
@@ -214,16 +215,16 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Card Flutuante 3: Redes Locais da Região (Superior Direito - Desktop) */}
-            <div className="hidden md:flex absolute md:-right-36 lg:-right-44 top-6 z-20 animate-float-slow items-center gap-2.5 bg-white/95 text-neutral-900 backdrop-blur-md hairline-border py-1.5 px-3 rounded-full shadow-elevated hover:scale-105 transition-all cursor-default">
-              <div className="w-5 h-5 rounded-full bg-[#84E000]/20 text-[#386000] flex items-center justify-center shrink-0">
-                <MapPin size={12} />
+            {/* Card Flutuante 3: Redes Locais da Região (Superior Direito - Mobile & Desktop) */}
+            <div className="flex absolute top-10 sm:top-6 -right-2 sm:-right-36 md:-right-40 lg:-right-44 z-20 animate-float-slow items-center gap-2 sm:gap-2.5 bg-white/95 text-neutral-900 backdrop-blur-md border border-black/10 py-1.5 sm:py-2 px-2.5 sm:px-3.5 rounded-full shadow-[0_15px_35px_-5px_rgba(0,0,0,0.25)] hover:scale-105 transition-all cursor-default max-w-[195px] sm:max-w-none">
+              <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-[#84E000]/20 text-[#386000] flex items-center justify-center shrink-0">
+                <MapPin size={11} className="sm:w-3.5 sm:h-3.5" />
               </div>
-              <div className="text-left">
-                <span className="text-[10px] font-bold block leading-none text-neutral-900">
+              <div className="text-left min-w-0">
+                <span className="text-[9px] sm:text-[10px] font-bold block leading-none text-neutral-900">
                   Mercados da Região
                 </span>
-                <span className="text-[9px] font-mono text-neutral-500 block mt-0.5">
+                <span className="text-[8px] sm:text-[9px] font-mono text-neutral-500 block mt-0.5 truncate">
                   Atacadão · Assaí · Carrefour
                 </span>
               </div>
@@ -288,12 +289,6 @@ export default function LandingPage() {
             </div>
 
           </div>
-
-          {/* Micro-Detalhe Mobile (Mercados da Região abaixo do mockup) */}
-          <div className="sm:hidden mt-12 inline-flex items-center gap-2 bg-white text-neutral-900 text-xs px-3.5 py-1.5 rounded-full border border-black/10 shadow-sm">
-            <MapPin size={12} className="text-[#497D00]" />
-            <span className="text-[11px] font-medium">Mercados da sua Região: <strong>Atacadão · Assaí · Carrefour</strong></span>
-          </div>
         </div>
 
       </section>
@@ -344,6 +339,219 @@ export default function LandingPage() {
             <p className="text-xs text-neutral-500 leading-relaxed">
               No Plano Família, compartilhe com o parceiro(a) via WhatsApp. Os dois visualizam e atualizam os itens da mesma casa em tempo real.
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ======================================================== */}
+      {/* SEÇÃO INSPIRADA NO BENCHMARK: INTERFACE CONVERSACIONAL */}
+      {/* ======================================================== */}
+      <section className="px-5 sm:px-8 py-16 max-w-5xl mx-auto border-t border-black/[0.06]">
+        <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-12">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#84E000]/15 text-[#386000] text-[10px] font-mono font-bold uppercase tracking-wider mb-3">
+            <Sparkles size={12} className="text-[#497D00]" />
+            EXPERIÊNCIA SEM ESFORÇO
+          </div>
+          <h2 className="font-sans text-2xl sm:text-4xl font-bold text-neutral-950 tracking-tight leading-tight">
+            Se você sabe mandar um áudio no WhatsApp, já sabe economizar com o list.me
+          </h2>
+          <p className="text-xs sm:text-sm text-neutral-600 mt-2.5 leading-relaxed">
+            Nada de abrir dezenas de panfletos de papel, digitar tudo na mão ou comparar mercado por mercado. Você fala naturalmente e a IA faz a cotação em segundos.
+          </p>
+        </div>
+
+        {/* Visual Mockup da Conversa Real */}
+        <div className="max-w-2xl mx-auto bg-white hairline-border rounded-[32px] p-4 sm:p-7 shadow-card">
+          
+          {/* Header da Simulação */}
+          <div className="flex items-center justify-between pb-4 border-b border-black/[0.06] mb-5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-neutral-950 flex items-center justify-center text-[#84E000] font-bold text-sm shadow-xs">
+                lm
+              </div>
+              <div>
+                <span className="font-bold text-xs sm:text-sm text-neutral-900 block leading-tight">
+                  Assistente list.me
+                </span>
+                <span className="text-[10px] text-[#497D00] font-medium flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#84E000] animate-pulse" />
+                  Online · Cotações ativas na sua região
+                </span>
+              </div>
+            </div>
+            <span className="text-[10px] font-mono text-neutral-400">Tempo real</span>
+          </div>
+
+          <div className="space-y-4">
+            {/* Mensagem 1: Áudio do Usuário */}
+            <div className="flex justify-end">
+              <div className="bg-[#84E000]/20 border border-[#84E000]/40 rounded-2xl rounded-tr-xs p-3.5 max-w-sm sm:max-w-md shadow-xs">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-8 h-8 rounded-full bg-neutral-950 text-[#84E000] flex items-center justify-center shrink-0">
+                    <Mic size={14} />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between text-[10px] text-neutral-600 mb-1">
+                      <span className="font-mono font-bold">Mensagem de Voz</span>
+                      <span className="font-mono">0:14</span>
+                    </div>
+                    <div className="flex items-center gap-1 h-3">
+                      <span className="w-1 h-2 bg-neutral-900 rounded-full" />
+                      <span className="w-1 h-3 bg-neutral-900 rounded-full" />
+                      <span className="w-1 h-1.5 bg-neutral-900 rounded-full" />
+                      <span className="w-1 h-3 bg-neutral-900 rounded-full" />
+                      <span className="w-1 h-2 bg-neutral-900 rounded-full" />
+                      <span className="w-1 h-3 bg-neutral-900 rounded-full" />
+                      <span className="w-1 h-1 bg-neutral-900 rounded-full" />
+                      <span className="w-1 h-2.5 bg-neutral-900 rounded-full" />
+                      <span className="w-1 h-3 bg-neutral-900 rounded-full" />
+                      <span className="w-1 h-1.5 bg-neutral-900 rounded-full" />
+                    </div>
+                  </div>
+                </div>
+                <p className="text-[11px] text-neutral-800 italic bg-white/70 px-2.5 py-1.5 rounded-lg border border-black/5">
+                  &ldquo;Vou no mercado hoje: 5kg arroz Tio João, 5kg açúcar Alto Alegre, 2kg carne moída, café Pilão e 2 leites integral.&rdquo;
+                </p>
+              </div>
+            </div>
+
+            {/* Mensagem 2: Resposta Instantânea da IA com Comparativo Real */}
+            <div className="flex justify-start">
+              <div className="bg-neutral-950 text-white rounded-2xl rounded-tl-xs p-4 sm:p-5 max-w-sm sm:max-w-md shadow-floating border border-neutral-800">
+                <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-white/10 mb-3">
+                  <div className="flex items-center gap-1.5 text-[10px] font-mono text-[#84E000] font-bold">
+                    <Zap size={12} className="fill-[#84E000]" />
+                    <span>COTAÇÃO CONCLUÍDA EM 3 SEGUNDOS</span>
+                  </div>
+                  <span className="text-[9px] font-mono text-neutral-400">5 itens</span>
+                </div>
+
+                <p className="text-xs text-neutral-300 mb-3 leading-relaxed">
+                  Analisei os encartes e preços atualizados hoje nos atacarejos da sua região:
+                </p>
+
+                {/* Lista de Mercados Comparados */}
+                <div className="space-y-2 mb-3">
+                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#84E000]/15 border border-[#84E000]/40">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-[#84E000]">🏆 Atacadão</span>
+                      <span className="text-[9px] font-mono font-bold uppercase px-1.5 py-0.5 rounded bg-[#84E000] text-neutral-950">
+                        Mais Barato
+                      </span>
+                    </div>
+                    <span className="text-xs font-mono font-bold text-[#84E000]">R$ 104,80</span>
+                  </div>
+
+                  <div className="flex items-center justify-between p-2 rounded-xl bg-neutral-900/60 border border-white/5 text-neutral-400 text-xs">
+                    <span>Assaí Atacadista</span>
+                    <span className="font-mono">R$ 116,90 (+R$ 12,10)</span>
+                  </div>
+
+                  <div className="flex items-center justify-between p-2 rounded-xl bg-neutral-900/60 border border-white/5 text-neutral-400 text-xs">
+                    <span>Supermercado Regional</span>
+                    <span className="font-mono">R$ 128,40 (+R$ 23,60)</span>
+                  </div>
+
+                  <div className="flex items-center justify-between p-2 rounded-xl bg-neutral-900/60 border border-white/5 text-neutral-400 text-xs">
+                    <span>Carrefour Hiper</span>
+                    <span className="font-mono">R$ 143,20 (+R$ 38,40)</span>
+                  </div>
+                </div>
+
+                {/* Veredito de Economia */}
+                <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between">
+                  <span className="text-[11px] text-neutral-300 font-medium">Economia nesta compra:</span>
+                  <span className="text-xs font-mono font-bold text-[#84E000]">R$ 38,40 (27% OFF)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ======================================================== */}
+      {/* SIMULADOR INTERATIVO DE ECONOMIA (INSPIRADO EM MODELOS SAAS) */}
+      {/* ======================================================== */}
+      <section className="px-5 sm:px-8 py-16 max-w-5xl mx-auto border-t border-black/[0.06]">
+        <div className="bg-gradient-to-b from-white to-[#F3F2EC] hairline-border rounded-[32px] p-6 sm:p-10 shadow-card">
+          <div className="text-center max-w-xl mx-auto mb-8">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-neutral-950 text-white text-[10px] font-mono font-bold uppercase tracking-wider mb-3">
+              <TrendingDown size={12} className="text-[#84E000]" />
+              SIMULADOR DE ECONOMIA REAL
+            </div>
+            <h2 className="font-sans text-2xl sm:text-3xl font-bold text-neutral-950">
+              Quanto a sua casa pode economizar todos os meses?
+            </h2>
+            <p className="text-xs sm:text-sm text-neutral-600 mt-2">
+              Selecione o quanto você gasta em compras por mês e veja a economia estimada:
+            </p>
+          </div>
+
+          {/* Botões Seletores de Gasto Mensal */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 max-w-xl mx-auto mb-8">
+            {[800, 1500, 2500, 3500].map((val) => (
+              <button
+                key={val}
+                type="button"
+                onClick={() => setMonthlySpend(val)}
+                className={`py-3 px-3 rounded-2xl font-bold text-xs sm:text-sm transition-all text-center flex flex-col items-center gap-1 cursor-pointer ${
+                  monthlySpend === val
+                    ? 'bg-neutral-950 text-white shadow-md border-2 border-[#84E000]'
+                    : 'bg-white text-neutral-700 hairline-border hover:border-black/20'
+                }`}
+              >
+                <span className="text-[10px] font-mono text-neutral-400 font-normal">Gasto mensal</span>
+                <span className="font-mono">R$ {val.toLocaleString('pt-BR')}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Painel com o Resultado da Simulação */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto text-center">
+            <div className="bg-white hairline-border p-4 sm:p-5 rounded-2xl shadow-xs">
+              <span className="text-[10px] font-mono uppercase text-neutral-400 font-bold block mb-1">
+                ECONOMIA NO MÊS
+              </span>
+              <span className="font-serif text-2xl sm:text-3xl font-bold text-[#386000] block">
+                R$ {Math.round(monthlySpend * 0.20)} a R$ {Math.round(monthlySpend * 0.32)}
+              </span>
+              <span className="text-[10px] text-neutral-500 mt-1 block">
+                Em média 20% a 32% menos na sua fatura
+              </span>
+            </div>
+
+            <div className="bg-white hairline-border p-4 sm:p-5 rounded-2xl shadow-xs">
+              <span className="text-[10px] font-mono uppercase text-neutral-400 font-bold block mb-1">
+                ECONOMIA NO ANO
+              </span>
+              <span className="font-serif text-2xl sm:text-3xl font-bold text-[#386000] block">
+                R$ {(Math.round(monthlySpend * 0.20) * 12).toLocaleString('pt-BR')} a R$ {(Math.round(monthlySpend * 0.32) * 12).toLocaleString('pt-BR')}
+              </span>
+              <span className="text-[10px] text-neutral-500 mt-1 block">
+                Dinheiro que volta para o seu bolso
+              </span>
+            </div>
+
+            <div className="bg-neutral-950 text-white p-4 sm:p-5 rounded-2xl shadow-floating border border-[#84E000]/40 flex flex-col justify-center">
+              <span className="text-[10px] font-mono uppercase text-[#84E000] font-bold block mb-1">
+                CUSTO DO LIST.ME
+              </span>
+              <span className="font-mono text-xl sm:text-2xl font-bold text-white block">
+                R$ 10,82<span className="text-xs font-normal text-neutral-400">/mês</span>
+              </span>
+              <span className="text-[10px] text-[#84E000] mt-1 font-mono font-bold block">
+                Se paga na 1ª compra!
+              </span>
+            </div>
+          </div>
+
+          <div className="mt-7 text-center">
+            <a
+              href="#precos"
+              className="inline-flex items-center gap-2 px-7 py-3 bg-[#84E000] hover:bg-[#92F200] text-neutral-950 rounded-full text-xs font-bold shadow-md transition"
+            >
+              Garantir Minha Economia Agora <ArrowRight size={14} />
+            </a>
           </div>
         </div>
       </section>
@@ -935,6 +1143,32 @@ export default function LandingPage() {
           })}
         </div>
 
+        {/* Banner de Suporte Humano no WhatsApp (Inspirado no Meu Assessor) */}
+        <div className="mt-8 p-4 sm:p-5 bg-white hairline-border rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left shadow-xs">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[#84E000]/15 text-[#386000] flex items-center justify-center shrink-0">
+              <MessageSquare size={18} />
+            </div>
+            <div>
+              <strong className="text-xs sm:text-sm font-bold text-neutral-900 block">
+                Não achou sua dúvida aqui?
+              </strong>
+              <span className="text-[11px] text-neutral-500">
+                Nosso suporte humano responde você no WhatsApp em poucos minutos.
+              </span>
+            </div>
+          </div>
+          <a
+            href="https://wa.me/5541999999999?text=Ol%C3%A1%2C%20gostaria%20de%20tirar%20uma%20d%C3%BAvida%20sobre%20o%20list.me"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-4 py-2 bg-neutral-950 hover:bg-[#84E000] hover:text-neutral-950 text-white rounded-full text-xs font-semibold shadow-xs transition flex items-center gap-1.5 duration-200 shrink-0"
+          >
+            <span>Falar no WhatsApp</span>
+            <ArrowRight size={13} />
+          </a>
+        </div>
+
         {/* Banner CTA Final de Dúvidas */}
         <div className="mt-12 p-6 sm:p-8 bg-neutral-950 text-white rounded-[32px] border-2 border-[#84E000]/50 shadow-floating flex flex-col sm:flex-row items-center justify-between gap-5">
           <div className="text-center sm:text-left">
@@ -958,7 +1192,7 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="px-5 sm:px-8 py-8 border-t border-black/[0.06] max-w-6xl w-full mx-auto flex flex-col sm:flex-row items-center justify-between text-xs text-neutral-500 gap-4 mt-auto">
+      <footer className="px-5 sm:px-8 pt-8 pb-20 sm:pb-8 border-t border-black/[0.06] max-w-6xl w-full mx-auto flex flex-col sm:flex-row items-center justify-between text-xs text-neutral-500 gap-4 mt-auto">
         <div className="flex items-center gap-2.5">
           <div className="w-6 h-6 rounded-lg overflow-hidden border border-black/10 shrink-0 bg-white">
             <Image
@@ -983,6 +1217,26 @@ export default function LandingPage() {
           <a href="#faq" className="hover:text-neutral-950 transition">Dúvidas Frequentes</a>
         </div>
       </footer>
+
+      {/* Sticky Bottom Bar Flutuante para Mobile (Garante Conversão Máxima no Smartphone) */}
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 p-3 bg-neutral-950/95 backdrop-blur-xl border-t border-white/10 z-40 flex items-center justify-between gap-3 shadow-[0_-10px_25px_rgba(0,0,0,0.4)]">
+        <div className="min-w-0">
+          <div className="flex items-center gap-1 text-[11px] font-bold text-white leading-tight">
+            <span>A partir de</span>
+            <span className="text-[#84E000] font-mono">R$ 10,82/mês</span>
+          </div>
+          <span className="text-[9px] text-neutral-400 block font-mono truncate">
+            7 dias de garantia incondicional
+          </span>
+        </div>
+        <a
+          href="#precos"
+          className="px-4 py-2 bg-[#84E000] hover:bg-[#92F200] text-neutral-950 font-bold rounded-full text-xs shadow-md transition shrink-0 flex items-center gap-1"
+        >
+          <span>Assinar Agora</span>
+          <ArrowRight size={13} />
+        </a>
+      </div>
 
     </div>
   );
