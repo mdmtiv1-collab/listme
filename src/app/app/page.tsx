@@ -287,23 +287,49 @@ export default function AppPage() {
     });
   };
 
-  // Sempre que o usuário trocar de página/aba, posicionar imediatamente no topo
-  useEffect(() => {
+  // Navegação estrita entre abas: força foco neutro e scroll no topo absoluto (0)
+  const switchTab = (newTab: ActiveTab) => {
+    if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+    setActiveTab(newTab);
     if (mainScrollRef.current) {
       mainScrollRef.current.scrollTop = 0;
     }
     if (typeof window !== 'undefined') {
-      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
     }
-    const rafId = requestAnimationFrame(() => {
+  };
+
+  // Sempre que o usuário trocar de página/aba, posicionar estritamente no topo absoluto
+  useEffect(() => {
+    const scrollToAbsoluteTop = () => {
       if (mainScrollRef.current) {
         mainScrollRef.current.scrollTop = 0;
       }
       if (typeof window !== 'undefined') {
-        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
       }
-    });
-    return () => cancelAnimationFrame(rafId);
+    };
+
+    scrollToAbsoluteTop();
+    const raf1 = requestAnimationFrame(scrollToAbsoluteTop);
+    const raf2 = requestAnimationFrame(() => requestAnimationFrame(scrollToAbsoluteTop));
+    const t1 = setTimeout(scrollToAbsoluteTop, 30);
+    const t2 = setTimeout(scrollToAbsoluteTop, 90);
+    const t3 = setTimeout(scrollToAbsoluteTop, 210); // Logo após a transição fade-in de 200ms
+
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
   }, [activeTab]);
 
   // Auto-scroll da conversa APENAS quando uma NOVA mensagem for adicionada (nunca ao trocar de aba)
@@ -957,14 +983,14 @@ export default function AppPage() {
                 itemName = 'Ovos (16 un)';
                 itemQuantity = 1;
                 itemUnit = 'bandeja';
-              } else if (itemQuantity === 12 || lower.includes('12') || lower.includes('duzia') || lower.includes('dúzia')) {
-                itemName = 'Ovos (Dúzia 12 un)';
-                itemQuantity = 1;
-                itemUnit = 'dz';
               } else if (itemQuantity === 6 || lower.includes('6') || lower.includes('meia')) {
                 itemName = 'Ovos (Meia Dúzia 6 un)';
                 itemQuantity = 1;
                 itemUnit = 'estojo';
+              } else if (itemQuantity === 12 || lower.includes('12') || lower.includes('duzia') || lower.includes('dúzia')) {
+                itemName = 'Ovos (Dúzia 12 un)';
+                itemQuantity = 1;
+                itemUnit = 'dz';
               }
             }
 
@@ -1111,7 +1137,7 @@ export default function AppPage() {
             origin: { y: 0.5 },
             colors: ['#84E000', '#92F200', '#0B0E11', '#497D00'],
           });
-          setActiveTab('expenses');
+          switchTab('expenses');
           showToast('🎉 Lista completa! Registre o valor pago no caixa.');
         }, 450);
       }
@@ -1323,8 +1349,10 @@ export default function AppPage() {
 
         {/* 2. Área de Conteúdo Rolável com Espaçamentos Refinados */}
         <main
+          key={activeTab}
           ref={mainScrollRef}
-          className={`flex-1 overflow-y-auto px-5 sm:px-6 pt-3.5 ${activeTab === 'chat' ? 'pb-28' : 'pb-24'}`}
+          style={{ overflowAnchor: 'none' }}
+          className={`flex-1 overflow-y-auto [overflow-anchor:none] px-5 sm:px-6 pt-3.5 ${activeTab === 'chat' ? 'pb-28' : 'pb-24'}`}
         >
 
           {/* ========================================= */}
@@ -1460,7 +1488,7 @@ export default function AppPage() {
                       Sua lista está limpa.
                     </p>
                     <button
-                      onClick={() => setActiveTab('chat')}
+                      onClick={() => switchTab('chat')}
                       className="px-3.5 py-1.5 bg-neutral-950 hover:bg-neutral-800 text-white text-xs font-medium rounded-full shadow-xs transition inline-flex items-center gap-1.5"
                     >
                       <Plus size={12} /> Adicionar itens
@@ -1481,7 +1509,7 @@ export default function AppPage() {
                         Total: <strong className="text-neutral-900 font-mono font-semibold">R$ {totalBasketValue.toFixed(2).replace('.', ',')}</strong>
                       </div>
                       <button
-                        onClick={() => setActiveTab('list')}
+                        onClick={() => switchTab('list')}
                         className="text-xs font-semibold text-[#497D00] hover:text-[#3A6400] flex items-center gap-1 transition"
                       >
                         Ver lista ({items.length}) <ChevronRight size={13} />
@@ -1495,7 +1523,7 @@ export default function AppPage() {
               <div className="grid grid-cols-2 gap-2.5">
                 <button
                   onClick={() => {
-                    setActiveTab('chat');
+                    switchTab('chat');
                     setIsRecordingAudio(true);
                   }}
                   className="bg-white hover:bg-neutral-50 hairline-border p-3.5 rounded-[20px] text-left shadow-card transition flex flex-col justify-between h-24 group"
@@ -1564,7 +1592,7 @@ export default function AppPage() {
 
                 {markets.length > 4 && (
                   <button
-                    onClick={() => setActiveTab('prices')}
+                    onClick={() => switchTab('prices')}
                     className="w-full pt-2.5 border-t border-neutral-100 text-center text-xs font-semibold text-[#497D00] hover:text-[#3A6400] flex items-center justify-center gap-1 transition"
                   >
                     Ver todas as {markets.length} redes de {city} <ChevronRight size={13} />
@@ -1713,7 +1741,7 @@ export default function AppPage() {
                               </div>
 
                               <button
-                                onClick={() => setActiveTab('list')}
+                                onClick={() => switchTab('list')}
                                 className="mt-2 text-xs font-semibold text-[#497D00] hover:text-[#3A6400] flex items-center gap-1 transition"
                               >
                                 Ver lista ({items.length}) <ChevronRight size={13} />
@@ -1803,7 +1831,7 @@ export default function AppPage() {
                     Dite, fotografe ou digite os produtos para calcular a melhor compra em {city}.
                   </p>
                   <button
-                    onClick={() => setActiveTab('chat')}
+                    onClick={() => switchTab('chat')}
                     className="py-2.5 px-5 bg-neutral-950 hover:bg-[#84E000] hover:text-neutral-950 text-white rounded-xl text-xs font-medium shadow-xs transition duration-200 inline-flex items-center gap-2"
                   >
                     <Plus size={13} /> Adicionar produtos
@@ -2067,7 +2095,7 @@ export default function AppPage() {
                   )}
 
                   <button
-                    onClick={() => setActiveTab('chat')}
+                    onClick={() => switchTab('chat')}
                     className="w-full py-3 bg-white hover:bg-neutral-50 hairline-border rounded-[20px] text-xs font-semibold text-neutral-800 flex items-center justify-center gap-2 shadow-xs transition"
                   >
                     <Sparkles size={13} className="text-[#497D00]" />
@@ -2657,7 +2685,7 @@ export default function AppPage() {
           className="shrink-0 h-16 bg-white/80 backdrop-blur-2xl hairline-border-t px-2 flex items-center justify-around z-40"
         >
           <button
-            onClick={() => setActiveTab('dashboard')}
+            onClick={() => switchTab('dashboard')}
             className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-2xl transition ${
               activeTab === 'dashboard'
                 ? 'text-neutral-950 font-bold'
@@ -2670,7 +2698,7 @@ export default function AppPage() {
           </button>
 
           <button
-            onClick={() => setActiveTab('chat')}
+            onClick={() => switchTab('chat')}
             className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-2xl transition ${
               activeTab === 'chat'
                 ? 'text-neutral-950 font-bold'
@@ -2683,7 +2711,7 @@ export default function AppPage() {
           </button>
 
           <button
-            onClick={() => setActiveTab('list')}
+            onClick={() => switchTab('list')}
             className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-2xl transition ${
               activeTab === 'list'
                 ? 'text-neutral-950 font-bold'
@@ -2696,7 +2724,7 @@ export default function AppPage() {
           </button>
 
           <button
-            onClick={() => setActiveTab('expenses')}
+            onClick={() => switchTab('expenses')}
             className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-2xl transition ${
               activeTab === 'expenses'
                 ? 'text-neutral-950 font-bold'
@@ -2709,7 +2737,7 @@ export default function AppPage() {
           </button>
 
           <button
-            onClick={() => setActiveTab('prices')}
+            onClick={() => switchTab('prices')}
             className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-2xl transition ${
               activeTab === 'prices'
                 ? 'text-neutral-950 font-bold'
@@ -2727,7 +2755,7 @@ export default function AppPage() {
           isOpen={isPhotoModalOpen}
           onClose={() => setIsPhotoModalOpen(false)}
           onItemsExtracted={(text) => {
-            setActiveTab('chat');
+            switchTab('chat');
             handleProcessUserText(text);
           }}
         />

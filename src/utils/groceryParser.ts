@@ -258,30 +258,50 @@ const GROCERY_CATALOG: Record<string, GroceryCatalogEntry> = {
   // --- HORTIFRÚTI ---
   'batata': { canonical: 'Batata', matchedProduct: 'Batata Branca Lavada Especial 1kg', category: 'Hortifrúti', basePrice: 5.99, unit: 'kg' },
   'cebola': { canonical: 'Cebola', matchedProduct: 'Cebola Nacional Selecionada 1kg', category: 'Hortifrúti', basePrice: 4.89, unit: 'kg' },
+  'cebolas': { canonical: 'Cebola', matchedProduct: 'Cebola Nacional Selecionada 1kg', category: 'Hortifrúti', basePrice: 4.89, unit: 'kg' },
   'tomate': { canonical: 'Tomate', matchedProduct: 'Tomate Longa Vida Vermelho 1kg', category: 'Hortifrúti', basePrice: 7.99, unit: 'kg' },
+  'tomates': { canonical: 'Tomate', matchedProduct: 'Tomate Longa Vida Vermelho 1kg', category: 'Hortifrúti', basePrice: 7.99, unit: 'kg' },
   'alho': { canonical: 'Alho', matchedProduct: 'Alho Roxo Nacional Pacote 200g', category: 'Hortifrúti', basePrice: 6.90, unit: 'pct' },
   'banana prata': { canonical: 'Banana Prata', matchedProduct: 'Banana Prata Selecionada 1kg', category: 'Hortifrúti', basePrice: 6.49, unit: 'kg' },
   'banana': { canonical: 'Banana', matchedProduct: 'Banana Prata Selecionada 1kg', category: 'Hortifrúti', basePrice: 6.49, unit: 'kg' },
+  'bananas': { canonical: 'Banana', matchedProduct: 'Banana Prata Selecionada 1kg', category: 'Hortifrúti', basePrice: 6.49, unit: 'kg' },
   'maçã': { canonical: 'Maçã', matchedProduct: 'Maçã Fuji Nacional 1kg', category: 'Hortifrúti', basePrice: 8.90, unit: 'kg' },
   'maca': { canonical: 'Maçã', matchedProduct: 'Maçã Fuji Nacional 1kg', category: 'Hortifrúti', basePrice: 8.90, unit: 'kg' },
+  'maçãs': { canonical: 'Maçã', matchedProduct: 'Maçã Fuji Nacional 1kg', category: 'Hortifrúti', basePrice: 8.90, unit: 'kg' },
+  'macas': { canonical: 'Maçã', matchedProduct: 'Maçã Fuji Nacional 1kg', category: 'Hortifrúti', basePrice: 8.90, unit: 'kg' },
   'laranja': { canonical: 'Laranja', matchedProduct: 'Laranja Pêra para Suco 1kg', category: 'Hortifrúti', basePrice: 4.90, unit: 'kg' },
+  'laranjas': { canonical: 'Laranja', matchedProduct: 'Laranja Pêra para Suco 1kg', category: 'Hortifrúti', basePrice: 4.90, unit: 'kg' },
   'limão': { canonical: 'Limão', matchedProduct: 'Limão Taiti Fresco 1kg', category: 'Hortifrúti', basePrice: 5.50, unit: 'kg' },
   'limao': { canonical: 'Limão', matchedProduct: 'Limão Taiti Fresco 1kg', category: 'Hortifrúti', basePrice: 5.50, unit: 'kg' },
+  'limões': { canonical: 'Limão', matchedProduct: 'Limão Taiti Fresco 1kg', category: 'Hortifrúti', basePrice: 5.50, unit: 'kg' },
+  'limoes': { canonical: 'Limão', matchedProduct: 'Limão Taiti Fresco 1kg', category: 'Hortifrúti', basePrice: 5.50, unit: 'kg' },
   'alface': { canonical: 'Alface', matchedProduct: 'Alface Crespa Hidropônica Maço', category: 'Hortifrúti', basePrice: 3.50, unit: 'un' },
   '30 ovos': { canonical: 'Ovos (Bandeja 30 un)', matchedProduct: 'Ovos Brancos Grandes Bandeja 30 un', category: 'Hortifrúti', basePrice: 18.90, unit: 'bandeja' },
   'cartela de 30 ovos': { canonical: 'Ovos (Bandeja 30 un)', matchedProduct: 'Ovos Brancos Grandes Bandeja 30 un', category: 'Hortifrúti', basePrice: 18.90, unit: 'bandeja' },
   'bandeja de 30 ovos': { canonical: 'Ovos (Bandeja 30 un)', matchedProduct: 'Ovos Brancos Grandes Bandeja 30 un', category: 'Hortifrúti', basePrice: 18.90, unit: 'bandeja' },
+  'cartela de ovos 30': { canonical: 'Ovos (Bandeja 30 un)', matchedProduct: 'Ovos Brancos Grandes Bandeja 30 un', category: 'Hortifrúti', basePrice: 18.90, unit: 'bandeja' },
+  'bandeja de ovos 30': { canonical: 'Ovos (Bandeja 30 un)', matchedProduct: 'Ovos Brancos Grandes Bandeja 30 un', category: 'Hortifrúti', basePrice: 18.90, unit: 'bandeja' },
+  'cartela 30 ovos': { canonical: 'Ovos (Bandeja 30 un)', matchedProduct: 'Ovos Brancos Grandes Bandeja 30 un', category: 'Hortifrúti', basePrice: 18.90, unit: 'bandeja' },
+  'bandeja 30 ovos': { canonical: 'Ovos (Bandeja 30 un)', matchedProduct: 'Ovos Brancos Grandes Bandeja 30 un', category: 'Hortifrúti', basePrice: 18.90, unit: 'bandeja' },
   'cartela de ovos': { canonical: 'Ovos (Bandeja 30 un)', matchedProduct: 'Ovos Brancos Grandes Bandeja 30 un', category: 'Hortifrúti', basePrice: 18.90, unit: 'bandeja' },
   'bandeja de ovos': { canonical: 'Ovos (Bandeja 30 un)', matchedProduct: 'Ovos Brancos Grandes Bandeja 30 un', category: 'Hortifrúti', basePrice: 18.90, unit: 'bandeja' },
   '20 ovos': { canonical: 'Ovos (Bandeja 20 un)', matchedProduct: 'Ovos Brancos Grandes Bandeja 20 un', category: 'Hortifrúti', basePrice: 14.50, unit: 'bandeja' },
+  'cartela de 20 ovos': { canonical: 'Ovos (Bandeja 20 un)', matchedProduct: 'Ovos Brancos Grandes Bandeja 20 un', category: 'Hortifrúti', basePrice: 14.50, unit: 'bandeja' },
   'bandeja de 20 ovos': { canonical: 'Ovos (Bandeja 20 un)', matchedProduct: 'Ovos Brancos Grandes Bandeja 20 un', category: 'Hortifrúti', basePrice: 14.50, unit: 'bandeja' },
+  'bandeja 20 ovos': { canonical: 'Ovos (Bandeja 20 un)', matchedProduct: 'Ovos Brancos Grandes Bandeja 20 un', category: 'Hortifrúti', basePrice: 14.50, unit: 'bandeja' },
   '16 ovos': { canonical: 'Ovos (16 un)', matchedProduct: 'Ovos Brancos Embalagem 16 un', category: 'Hortifrúti', basePrice: 12.90, unit: 'bandeja' },
+  'bandeja de 16 ovos': { canonical: 'Ovos (16 un)', matchedProduct: 'Ovos Brancos Embalagem 16 un', category: 'Hortifrúti', basePrice: 12.90, unit: 'bandeja' },
   '12 ovos': { canonical: 'Ovos (Dúzia 12 un)', matchedProduct: 'Ovos Brancos Grandes Estojo 12 un', category: 'Hortifrúti', basePrice: 10.90, unit: 'dz' },
+  'bandeja de 12 ovos': { canonical: 'Ovos (Dúzia 12 un)', matchedProduct: 'Ovos Brancos Grandes Estojo 12 un', category: 'Hortifrúti', basePrice: 10.90, unit: 'dz' },
+  'estojo de 12 ovos': { canonical: 'Ovos (Dúzia 12 un)', matchedProduct: 'Ovos Brancos Grandes Estojo 12 un', category: 'Hortifrúti', basePrice: 10.90, unit: 'dz' },
   'dúzia de ovos': { canonical: 'Ovos (Dúzia 12 un)', matchedProduct: 'Ovos Brancos Grandes Estojo 12 un', category: 'Hortifrúti', basePrice: 10.90, unit: 'dz' },
   'duzia de ovos': { canonical: 'Ovos (Dúzia 12 un)', matchedProduct: 'Ovos Brancos Grandes Estojo 12 un', category: 'Hortifrúti', basePrice: 10.90, unit: 'dz' },
   '6 ovos': { canonical: 'Ovos (Meia Dúzia 6 un)', matchedProduct: 'Ovos Brancos Estojo 6 un', category: 'Hortifrúti', basePrice: 5.90, unit: 'estojo' },
+  'estojo de 6 ovos': { canonical: 'Ovos (Meia Dúzia 6 un)', matchedProduct: 'Ovos Brancos Estojo 6 un', category: 'Hortifrúti', basePrice: 5.90, unit: 'estojo' },
   'meia dúzia de ovos': { canonical: 'Ovos (Meia Dúzia 6 un)', matchedProduct: 'Ovos Brancos Estojo 6 un', category: 'Hortifrúti', basePrice: 5.90, unit: 'estojo' },
   'meia duzia de ovos': { canonical: 'Ovos (Meia Dúzia 6 un)', matchedProduct: 'Ovos Brancos Estojo 6 un', category: 'Hortifrúti', basePrice: 5.90, unit: 'estojo' },
+  'meia dúzia': { canonical: 'Ovos (Meia Dúzia 6 un)', matchedProduct: 'Ovos Brancos Estojo 6 un', category: 'Hortifrúti', basePrice: 5.90, unit: 'estojo' },
+  'meia duzia': { canonical: 'Ovos (Meia Dúzia 6 un)', matchedProduct: 'Ovos Brancos Estojo 6 un', category: 'Hortifrúti', basePrice: 5.90, unit: 'estojo' },
   'ovos': { canonical: 'Ovos (Dúzia 12 un)', matchedProduct: 'Ovos Brancos Grandes 12 un', category: 'Hortifrúti', basePrice: 10.90, unit: 'dz' },
   'ovo': { canonical: 'Ovos (Dúzia 12 un)', matchedProduct: 'Ovos Brancos Grandes 12 un', category: 'Hortifrúti', basePrice: 10.90, unit: 'dz' },
 
@@ -374,13 +394,14 @@ function cleanFillerPhrases(rawText: string): string {
     }
   }
 
-  // Descarta frases genéricas de preenchimento (ex: "e mais algumas coisas", "mais uns itens")
+  // Descarta frases genéricas de preenchimento (ex: "e mais algumas coisas", "mais uns itens", "e tudo isso")
   const fillerPhrases = [
     /\b(?:e\s+)?mais\s+alguma(?:s)?\s+coisa(?:s)?\b/gi,
     /\b(?:e\s+)?alguma(?:s)?\s+outra(?:s)?\s+coisa(?:s)?\b/gi,
     /\b(?:e\s+)?mais\s+uns?\s+(?:itens|coisas|produtos|negócios|negocios)\b/gi,
     /\b(?:e\s+)?o\s+que\s+mais\s+tiver\b/gi,
     /\b(?:e\s+)?por\s+enquanto\s+(?:é\s+)?só\b/gi,
+    /\b(?:e\s+)?(?:tudo\s+isso|tudo\s+mais|isso\s+tudo|e\s+tudo|e\s+tal|e\s+etc)\b/gi,
   ];
   for (const pattern of fillerPhrases) {
     text = text.replace(pattern, ' , ');
@@ -395,6 +416,55 @@ function cleanFillerPhrases(rawText: string): string {
   // Deduplica repetições consecutivas comuns em fala hesitante ("pão de alho pão de alho")
   text = text.replace(/\b([a-záéíóúãõçâêîôû]+(?:\s+[a-záéíóúãõçâêîôû]+){0,2})\s+\1\b/gi, '$1');
 
+  // 1. Variação invertida: "com 12 unidades uma bandeja de ovos" / "com 30 ovos uma cartela"
+  text = text.replace(
+    /\bcom\s+(meia\s+d[úu]zia|meia\s+duzia|duas\s+d[úu]zias|d[úu]zia|duzia|30|20|16|12|6)\s*(?:unidades?|un|ovos?)?\s*(?:de\s+ovos?|de\s+ovo)?\s*(?:,|e\s+)?\s*(?:uma?\s+)?(?:bandeja|cartela|estojo|embalagem)\s*(?:de\s+ovos?|de\s+ovo)?\b/gi,
+    (match, size) => {
+      const s = (size || '').toLowerCase();
+      if (s.includes('30') || s.includes('duas')) return ' , 1 bandeja de 30 ovos , ';
+      if (s.includes('20')) return ' , 1 bandeja de 20 ovos , ';
+      if (s.includes('16')) return ' , 1 bandeja de 16 ovos , ';
+      if (s.includes('meia')) return ' , 1 meia dúzia de ovos , ';
+      if (s.includes('12') || s.includes('dúzia') || s.includes('duzia')) return ' , 1 dúzia de ovos , ';
+      return match;
+    }
+  );
+
+  // 2. Normalização Inteligente de Embalagens e Pedidos Coloquiais de Ovos
+  // Evita separar em "com 12 unidades" + "ovo", unificando na embalagem comercial correta
+  text = text.replace(
+    /\b(?:(?:preciso\s+comprar|comprar|quero)\s+)?(?:ovos?|ovo)?\s*(?:,|e\s+)?\s*(?:uma?\s+)?(?:bandeja|cartela|estojo|embalagem|caixa)?\s*(?:de\s+)?(?:ovos?|ovo)?\s*(?:com|de)?\s*(meia\s+d[úu]zia|meia\s+duzia|duas\s+d[úu]zias|d[úu]zia|duzia|30|20|16|12|6)\s*(?:unidades?|un|ovos?|itens)?(?:\s*(?:de\s+)?(?:ovos?|ovo))?\b/gi,
+    (match, size) => {
+      const s = (size || '').toLowerCase();
+      if (s.includes('30') || s.includes('duas')) return ' , 1 bandeja de 30 ovos , ';
+      if (s.includes('20')) return ' , 1 bandeja de 20 ovos , ';
+      if (s.includes('16')) return ' , 1 bandeja de 16 ovos , ';
+      if (s.includes('meia')) return ' , 1 meia dúzia de ovos , ';
+      if (s.includes('12') || s.includes('dúzia') || s.includes('duzia')) return ' , 1 dúzia de ovos , ';
+      return match;
+    }
+  );
+
+  // 3. Variação: "ovo 12 unidades" / "ovo 20 unidades" / "ovo 30 unidades" / "ovos 12 un"
+  text = text.replace(
+    /\b(?:ovos?|ovo)\s+(?:com\s+|de\s+)?(meia\s+d[úu]zia|meia\s+duzia|duas\s+d[úu]zias|d[úu]zia|duzia|30|20|16|12|6)\s*(?:unidades?|un|ovos?)?\b/gi,
+    (match, size) => {
+      const s = (size || '').toLowerCase();
+      if (s.includes('30') || s.includes('duas')) return ' , 1 bandeja de 30 ovos , ';
+      if (s.includes('20')) return ' , 1 bandeja de 20 ovos , ';
+      if (s.includes('16')) return ' , 1 bandeja de 16 ovos , ';
+      if (s.includes('meia')) return ' , 1 meia dúzia de ovos , ';
+      if (s.includes('12') || s.includes('dúzia') || s.includes('duzia')) return ' , 1 dúzia de ovos , ';
+      return match;
+    }
+  );
+
+  // 4. Variação: "ovo uma bandeja" / "ovos uma cartela" sem número explícito -> assume bandeja de 30 ovos
+  text = text.replace(
+    /\b(?:ovos?|ovo)\s+(?:,|e\s+)?\s*(?:uma?\s+)?(?:bandeja|cartela)\b/gi,
+    ' , 1 bandeja de 30 ovos , '
+  );
+
   // Conectores de marca falados naturalmente ("pão de alho é Santa massa", "arroz da Camil")
   text = text.replace(/\b(pão de alho|pao de alho)\s+(?:e\s+|é\s+|da\s+|marca\s+)?(santa\s+massa)\b/gi, '$1 $2');
   text = text.replace(/\b(arroz)\s+(?:e\s+|é\s+|da\s+|marca\s+)?(tio\s+jo[ãa]o|camil|prato\s+fino)\b/gi, '$1 $2');
@@ -406,9 +476,10 @@ function cleanFillerPhrases(rawText: string): string {
   text = text.replace(/\b(?:refrigerante)\s*(?:,|e\s+)?\s*(?:(um|uma)\s+)?(coca[-\s]?cola|guaran[aá]|fanta|sprite|pepsi)\b/gi, '$1 $2');
   text = text.replace(/\b(?:carne)\s*(?:,|e\s+|de\s+)?\s*(alcatra|picanha|contra[- ]?fil[ée]|costela|maminha|cupim|fraldinha|patinho)\b/gi, '$1');
 
-  // Sufixos comuns ao finalizar áudio
+  // Sufixos comuns ao finalizar áudio (descarta despedidas e ruídos de fechamento)
   const suffixPatterns = [
-    /\b(e é isso|e e isso|é isso|e isso|por enquanto é só|por enquanto e so|só isso|so isso|por favor|fechou|valeu|obrigado|obrigada|tá|ta|né|ne|beleza|ok)\.?$/gi,
+    /\b(?:e\s+)?(?:é\s+|e\s+)?(?:isso|tudo\s+isso|tudo\s+mais|isso\s+tudo|era\s+isso|só\s+isso|so\s+isso|só\s+isso\s+aí|tudo|tá\s+bom)\b\.?$/gi,
+    /\b(?:por\s+enquanto\s+(?:é\s+)?só|por\s+hoje\s+(?:é\s+)?só|por\s+favor|fechou|valeu|obrigado|obrigada|tá|ta|né|ne|beleza|ok)\.?$/gi,
   ];
   for (const pattern of suffixPatterns) {
     text = text.trim().replace(pattern, '').trim();
@@ -459,6 +530,13 @@ function extractQuantityAndUnit(clause: string): { quantity: number; unit: strin
       quantity = Math.max(1, parseInt(rawNum, 10));
     }
 
+    if (rawNum === 'meia' && (match[2]?.toLowerCase().startsWith('d') || working.toLowerCase().includes('dúzia') || working.toLowerCase().includes('duzia'))) {
+      quantity = 1;
+      unit = 'estojo';
+      working = 'meia dúzia de ovos';
+      return { quantity, unit, cleanPhrase: working };
+    }
+
     if (match[2]) {
       const u = match[2].toLowerCase();
       if (u.startsWith('k')) unit = 'kg';
@@ -481,6 +559,29 @@ function isQuantityOrModifierOnly(text: string): boolean {
   if (!trimmed) return true;
   const qtyOnlyRegex = /^(?:(?:\d+|(?:uma|um|duas|dois|tr[êe]s|tres|quatro|cinco|seis|dez|meia|meio)\b)\s*(?:kg|k|g|un|pct|pacotes?|garrafas?|latas?|litros?|l|caixas?|cx|dz|d[úu]zias?|x)?\b\s*(?:de\b)?|o|a|os|as|de|para|com|\s)+$/i;
   return qtyOnlyRegex.test(trimmed);
+}
+
+function isValidGroceryItemName(phrase: string): boolean {
+  const trimmed = phrase.trim().toLowerCase();
+  if (!trimmed || trimmed.length < 2) return false;
+
+  const invalidPhrases = new Set([
+    'tudo isso', 'e tudo isso', 'tudo mais', 'e tudo mais', 'tudo', 'e tudo',
+    'coisas', 'outras coisas', 'alguma coisa', 'mais coisas', 'itens', 'produtos',
+    'negocios', 'negócios', 'isso', 'e isso', 'aquilo', 'e aquilo',
+    'por enquanto', 'so isso', 'só isso', 'fechou', 'valeu', 'obrigado',
+    'selecionado', 'unidades', 'unidade', 'bandeja', 'cartela', 'estojo',
+    'pacote', 'pacotes', 'caixa', 'caixas', 'litro', 'litros', 'quilo', 'quilos',
+  ]);
+  if (invalidPhrases.has(trimmed)) return false;
+
+  if (/^(?:com|de|em|para|por|e|a|o|um|uma|uns|umas|\d+|unidades?|un|kg|k|g|pct|cx|l|dz)+\s*$/i.test(trimmed)) {
+    return false;
+  }
+  if (/^(?:com|de|para|em)\s+\d+(?:\s+(?:uma?|unidades?))?$/i.test(trimmed)) {
+    return false;
+  }
+  return true;
 }
 
 /**
@@ -520,7 +621,6 @@ function splitClauseByRecognizedItems(clause: string, sortedKeys: string[]): str
   let currentStart = 0;
 
   // Se houver texto antes do primeiro item reconhecido que não seja quantidade nem artigo:
-  // Esse texto é um item independente prévio (ex: "bolo bolacha..." -> "bolo" é um item)
   const textBeforeFirst = clause.substring(0, claimedMatches[0].start).trim();
   if (textBeforeFirst && !isQuantityOrModifierOnly(textBeforeFirst)) {
     segments.push(textBeforeFirst);
@@ -627,8 +727,9 @@ export function extractGroceryItems(rawText: string): ParsedGroceryItem[] {
       let finalProduct = matchedEntry.matchedProduct;
 
       // Se o usuário adicionou marca ou especificação não catalogada (ex: "arroz camponês"):
-      // Mantém a especificação original do usuário
-      if (!matchedKey.includes(' ') && normalizedPhrase.length > matchedKey.length) {
+      // Mantém a especificação original do usuário (exceto ovos onde usamos padronização)
+      const isEggItem = finalName.toLowerCase().includes('ovo') || normalizedPhrase.includes('ovo');
+      if (!isEggItem && !matchedKey.includes(' ') && normalizedPhrase.length > matchedKey.length) {
         finalName = capitalizeWords(cleanPhrase);
         finalProduct = `${finalName} (Melhor cotação na região)`;
       }
@@ -637,35 +738,44 @@ export function extractGroceryItems(rawText: string): ParsedGroceryItem[] {
       let finalUnit = detectedUnit !== 'un' ? detectedUnit : matchedEntry.unit;
       let finalBasePrice = matchedEntry.basePrice;
 
-      // Inteligência de Embalagem para Ovos (evita calcular 30 dúzias para 30 ovos)
-      if (finalName.toLowerCase().includes('ovo')) {
-        if (finalQty === 30 || finalQty === 20 || finalQty === 16 || finalQty === 12 || finalQty === 6) {
-          if (finalQty === 30) {
-            finalName = 'Ovos (Bandeja 30 un)';
-            finalProduct = 'Ovos Brancos Grandes Bandeja 30 un';
-            finalBasePrice = 18.90;
-            finalUnit = 'bandeja';
-          } else if (finalQty === 20) {
-            finalName = 'Ovos (Bandeja 20 un)';
-            finalProduct = 'Ovos Brancos Grandes Bandeja 20 un';
-            finalBasePrice = 14.50;
-            finalUnit = 'bandeja';
-          } else if (finalQty === 16) {
-            finalName = 'Ovos (16 un)';
-            finalProduct = 'Ovos Brancos Embalagem 16 un';
-            finalBasePrice = 12.90;
-            finalUnit = 'bandeja';
-          } else if (finalQty === 12) {
-            finalName = 'Ovos (Dúzia 12 un)';
-            finalProduct = 'Ovos Brancos Grandes Estojo 12 un';
-            finalBasePrice = 10.90;
-            finalUnit = 'dz';
-          } else if (finalQty === 6) {
-            finalName = 'Ovos (Meia Dúzia 6 un)';
-            finalProduct = 'Ovos Brancos Estojo 6 un';
-            finalBasePrice = 5.90;
-            finalUnit = 'estojo';
-          }
+      // Inteligência de Embalagem para Ovos (bandejas e estojos reais)
+      const lowerClean = cleanPhrase.toLowerCase();
+      if (isEggItem) {
+        if (lowerClean.includes('30') || finalQty === 30) {
+          finalName = 'Ovos (Bandeja 30 un)';
+          finalProduct = 'Ovos Brancos Grandes Bandeja 30 un';
+          finalBasePrice = 18.90;
+          finalUnit = 'bandeja';
+          finalQty = 1;
+        } else if (lowerClean.includes('20') || finalQty === 20) {
+          finalName = 'Ovos (Bandeja 20 un)';
+          finalProduct = 'Ovos Brancos Grandes Bandeja 20 un';
+          finalBasePrice = 14.50;
+          finalUnit = 'bandeja';
+          finalQty = 1;
+        } else if (lowerClean.includes('16') || finalQty === 16) {
+          finalName = 'Ovos (16 un)';
+          finalProduct = 'Ovos Brancos Embalagem 16 un';
+          finalBasePrice = 12.90;
+          finalUnit = 'bandeja';
+          finalQty = 1;
+        } else if (lowerClean.includes('6') || lowerClean.includes('meia') || finalQty === 6) {
+          finalName = 'Ovos (Meia Dúzia 6 un)';
+          finalProduct = 'Ovos Brancos Estojo 6 un';
+          finalBasePrice = 5.90;
+          finalUnit = 'estojo';
+          finalQty = 1;
+        } else if (lowerClean.includes('12') || lowerClean.includes('duzia') || lowerClean.includes('dúzia') || finalQty === 12) {
+          finalName = 'Ovos (Dúzia 12 un)';
+          finalProduct = 'Ovos Brancos Grandes Estojo 12 un';
+          finalBasePrice = 10.90;
+          finalUnit = 'dz';
+          finalQty = 1;
+        } else if (lowerClean.includes('bandeja') || lowerClean.includes('cartela')) {
+          finalName = 'Ovos (Bandeja 30 un)';
+          finalProduct = 'Ovos Brancos Grandes Bandeja 30 un';
+          finalBasePrice = 18.90;
+          finalUnit = 'bandeja';
           finalQty = 1;
         }
       }
@@ -684,7 +794,10 @@ export function extractGroceryItems(rawText: string): ParsedGroceryItem[] {
       }
     } else {
       // 2. Se o produto não estiver no catálogo (ex: item regional ou marca customizada)
-      // Preserva o nome composto como um único item
+      if (!isValidGroceryItemName(cleanPhrase)) {
+        continue;
+      }
+
       const capitalized = capitalizeWords(cleanPhrase);
       const dedupeKey = capitalized.toLowerCase();
 
@@ -707,13 +820,25 @@ export function extractGroceryItems(rawText: string): ParsedGroceryItem[] {
 
         foundItems.push({
           name: capitalized,
-          matchedProduct: `${capitalized} Selecionado`,
+          matchedProduct: `${capitalized} (Melhor cotação na região)`,
           category: inferredCategory,
           basePrice: 14.90,
           unit: detectedUnit !== 'un' ? detectedUnit : 'un',
           quantity,
         });
       }
+    }
+  }
+
+  // Se o usuário falou um "ovo" genérico no início (ex: "preciso de ovo...") mas também
+  // incluiu uma bandeja específica (ex: "bandeja de 20 ovos"), prioriza a bandeja específica.
+  const hasSpecificEggTray = foundItems.some(
+    (it) => it.name.includes('Bandeja') || it.name.includes('16') || it.name.includes('Meia Dúzia')
+  );
+  if (hasSpecificEggTray) {
+    const eggCount = foundItems.filter((it) => it.name.toLowerCase().includes('ovo')).length;
+    if (eggCount > 1) {
+      return foundItems.filter((it) => it.name !== 'Ovos (Dúzia 12 un)');
     }
   }
 

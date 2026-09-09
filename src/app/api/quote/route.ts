@@ -128,6 +128,12 @@ DIRETRIZES FUNDAMENTAIS DE COMPARAÇÃO, ATACADISTAS E PROXIMIDADE (LEIA COM MÁ
 
    **💡 Análise do Consultor:** [Explicação em 1 ou 2 frases curtas comparando se compensa ir no atacadista ou no mercado de bairro pela relação economia vs distância].
 
+9. PROCESSAMENTO DE ÁUDIO E LINGUAGEM COLOQUIAL NATURAL:
+   - Os usuários costumam ditar listas falando livremente (ex: "preciso comprar ovo, batata, um óleo, um azeite, um cacho de banana, três maçãs, uma bandeja com 20 unidades de ovos e tudo isso").
+   - Você DEVE extrair cada produto genuíno e IGNORAR totalmente ruídos de fala ou fechamento ("e tudo isso", "e tudo mais", "e era isso", "só isso", "por enquanto é só", "tá bom").
+   - É ESTRITAMENTE PROIBIDO criar itens como "Tudo Isso", "Coisas", "Com 12", "Unidades".
+   - Quando o usuário disser "uma bandeja com 12 unidades de ovos", "ovo uma bandeja com 12" ou "bandeja com 20 unidades de ovos", unifique no produto de ovos com a respectiva embalagem. NUNCA crie dois itens de ovos separados nem produtos com nome quebrado!
+
 FORMATO DE RESPOSTA OBRIGATÓRIO (JSON PURO):
 {
   "city": "${city}, ${state}",
@@ -313,6 +319,25 @@ FORMATO DE RESPOSTA OBRIGATÓRIO (JSON PURO):
 
       const isWinnerAtacado = /atacad|circuito|assai|fort|kompr|stok/i.test(winnerName);
 
+      // Filtra ruídos de fala (ex: "Tudo isso", "Com 12", etc.)
+      parsedJson.items = parsedJson.items.filter((it: any) => {
+        const n = (it.name || it.matchedProduct || '').trim().toLowerCase();
+        if (!n || n.length < 2) return false;
+        if (
+          n.includes('tudo isso') ||
+          n === 'tudo' ||
+          n.includes('tudo mais') ||
+          n === 'com 12' ||
+          n === 'unidades' ||
+          n === 'itens' ||
+          n === 'coisas' ||
+          n.startsWith('com 12')
+        ) {
+          return false;
+        }
+        return true;
+      });
+
       parsedJson.items.forEach((it: any) => {
         const lowerName = (it.name || it.matchedProduct || '').toLowerCase();
         const lowerRaw = (rawInput || '').toLowerCase();
@@ -324,6 +349,7 @@ FORMATO DE RESPOSTA OBRIGATÓRIO (JSON PURO):
             it.quantity === 30 ||
             lowerRaw.includes('30 ovo') ||
             lowerRaw.includes('30 de ovo') ||
+            lowerRaw.includes('30') ||
             (lowerName.includes('bandeja') && !lowerName.includes('20') && !lowerName.includes('12')) ||
             (lowerName.includes('cartela') && !lowerName.includes('20') && !lowerName.includes('12'))
           ) {
@@ -335,7 +361,7 @@ FORMATO DE RESPOSTA OBRIGATÓRIO (JSON PURO):
             if (isNaN(numP) || numP > 25.00 || numP < 15.00) {
               it.bestPrice = isWinnerAtacado ? 18.90 : 21.90;
             }
-          } else if (lowerName.includes('20') || it.quantity === 20 || lowerRaw.includes('20 ovo')) {
+          } else if (lowerName.includes('20') || it.quantity === 20 || lowerRaw.includes('20')) {
             it.name = 'Ovos Brancos Grandes (Bandeja 20 un)';
             it.matchedProduct = 'Ovos Brancos Grandes Bandeja 20 unidades';
             it.quantity = 1;
@@ -344,7 +370,7 @@ FORMATO DE RESPOSTA OBRIGATÓRIO (JSON PURO):
             if (isNaN(numP) || numP > 19.00 || numP < 11.00) {
               it.bestPrice = isWinnerAtacado ? 13.90 : 16.50;
             }
-          } else if (lowerName.includes('16') || it.quantity === 16 || lowerRaw.includes('16 ovo')) {
+          } else if (lowerName.includes('16') || it.quantity === 16 || lowerRaw.includes('16')) {
             it.name = 'Ovos Brancos Grandes (16 un)';
             it.matchedProduct = 'Ovos Brancos Grandes Embalagem 16 unidades';
             it.quantity = 1;
@@ -354,11 +380,26 @@ FORMATO DE RESPOSTA OBRIGATÓRIO (JSON PURO):
               it.bestPrice = isWinnerAtacado ? 11.90 : 13.90;
             }
           } else if (
+            lowerName.includes('6') ||
+            it.quantity === 6 ||
+            lowerName.includes('meia') ||
+            lowerRaw.includes('6') ||
+            lowerRaw.includes('meia')
+          ) {
+            it.name = 'Ovos Brancos (Meia Dúzia 6 un)';
+            it.matchedProduct = 'Ovos Brancos Estojo 6 unidades';
+            it.quantity = 1;
+            it.unit = 'estojo';
+            const numP = Number(it.bestPrice);
+            if (isNaN(numP) || numP > 8.00 || numP < 4.00) {
+              it.bestPrice = 5.90;
+            }
+          } else if (
             lowerName.includes('12') ||
             it.quantity === 12 ||
             lowerName.includes('duzia') ||
             lowerName.includes('dúzia') ||
-            lowerRaw.includes('12 ovo') ||
+            lowerRaw.includes('12') ||
             lowerRaw.includes('duzia') ||
             lowerRaw.includes('dúzia')
           ) {
@@ -369,15 +410,6 @@ FORMATO DE RESPOSTA OBRIGATÓRIO (JSON PURO):
             const numP = Number(it.bestPrice);
             if (isNaN(numP) || numP > 14.00 || numP < 7.00) {
               it.bestPrice = isWinnerAtacado ? 9.90 : 11.90;
-            }
-          } else if (lowerName.includes('6') || it.quantity === 6 || lowerName.includes('meia') || lowerRaw.includes('6 ovo')) {
-            it.name = 'Ovos Brancos (Meia Dúzia 6 un)';
-            it.matchedProduct = 'Ovos Brancos Estojo 6 unidades';
-            it.quantity = 1;
-            it.unit = 'estojo';
-            const numP = Number(it.bestPrice);
-            if (isNaN(numP) || numP > 8.00 || numP < 4.00) {
-              it.bestPrice = 5.90;
             }
           } else if (it.quantity > 1 && it.quantity <= 30) {
             it.name = 'Ovos Brancos Grandes (Bandeja 30 un)';
@@ -398,6 +430,18 @@ FORMATO DE RESPOSTA OBRIGATÓRIO (JSON PURO):
         const q = Number(it.quantity) || 1;
         totalRecalculated += it.bestPrice * q;
       });
+
+      // Se a IA retornou um "Ovos" genérico e também uma bandeja específica de 20 ou 30 ovos,
+      // remove o item genérico para não duplicar na lista
+      const hasSpecificEggTray = parsedJson.items.some(
+        (it: any) => it.name?.includes('Bandeja') || it.name?.includes('16') || it.name?.includes('Meia Dúzia')
+      );
+      if (hasSpecificEggTray) {
+        const eggItems = parsedJson.items.filter((it: any) => (it.name || '').toLowerCase().includes('ovo'));
+        if (eggItems.length > 1) {
+          parsedJson.items = parsedJson.items.filter((it: any) => it.name !== 'Ovos Brancos Grandes (Dúzia 12 un)');
+        }
+      }
 
       totalRecalculated = Number(totalRecalculated.toFixed(2));
       if (parsedJson.winner) {
