@@ -96,7 +96,20 @@ DIRETRIZES FUNDAMENTAIS DE COMPARAÇÃO, ATACADISTAS E PROXIMIDADE (LEIA COM MÁ
 6. PROIBIÇÃO DE REDES DE OUTROS ESTADOS OU INEXISTENTES:
    - Use APENAS redes com lojas físicas na região de ${city}/${state}. É ESTRITAMENTE PROIBIDO citar Guanabara, Mundial, Copacol, Lar, Coopavel, Amigão, etc., que não existem em ${city}/${state}!
 
-7. ESTRUTURA DO "replyText" (COMPARATIVO COMPLETO E TRANSPARENTE):
+7. REGRA CRÍTICA PARA EMBALAGENS DE OVOS (PROIBIDO PREÇOS ABSURDOS COMO R$ 69):
+   - Ovos no Brasil são vendidos exclusivamente em embalagens/bandejas fechadas.
+   - NUNCA cobre ovos por unidade avulsa (ex: 30 ovos a R$ 2,30 cada = R$ 69,00 é COMPLETAMENTE ERRADO E PROIBIDO!).
+   - Se o usuário pedir "30 ovos", "bandeja de 30 ovos" ou "cartela de ovos":
+     * O item DEVE ser "Ovos Brancos Grandes (Bandeja 30 un)".
+     * quantity: 1, unit: "bandeja".
+     * Preço REAL de varejo no Paraná: R$ 17,90 a R$ 19,90 no Atacado (Atacadão, Max, Circuito) e R$ 20,90 a R$ 23,90 no Supermercado (Rio Verde, Condor).
+   - Se o usuário pedir "20 ovos": quantity: 1, unit: "bandeja", preço de R$ 13,50 a R$ 16,50.
+   - Se o usuário pedir "16 ovos": quantity: 1, unit: "bandeja", preço de R$ 11,90 a R$ 13,90.
+   - Se o usuário pedir "12 ovos" ou "1 dúzia": quantity: 1, unit: "dz", preço de R$ 8,90 a R$ 11,90.
+   - Se o usuário pedir "6 ovos" ou "meia dúzia": quantity: 1, unit: "estojo", preço de R$ 5,50 a R$ 6,90.
+   - Se pedir "60 ovos": quantity: 2, unit: "bandeja", preço unitário de ~R$ 18,90 (total ~R$ 37,80).
+
+8. ESTRUTURA DO "replyText" (COMPARATIVO COMPLETO E TRANSPARENTE):
    O texto da resposta DEVE OBRIGATORIAMENTE apresentar o comparativo completo de todas as lojas para que o usuário veja todas as opções lado a lado:
    
    **Veredito:** O [Nome da Loja Vencedora] é a melhor opção para a sua compra completa em [Bairro/Cidade] (a [X] km de você), com valor total de **R$ [Total]** para os [N] itens.
@@ -274,6 +287,14 @@ FORMATO DE RESPOSTA OBRIGATÓRIO (JSON PURO):
 
       const fallbackPrice = (name: string): number => {
         const lower = (name || '').toLowerCase();
+        if (lower.includes('ovo')) {
+          if (lower.includes('30')) return 18.90;
+          if (lower.includes('20')) return 14.50;
+          if (lower.includes('16')) return 12.90;
+          if (lower.includes('12') || lower.includes('duzia') || lower.includes('dúzia')) return 10.90;
+          if (lower.includes('6') || lower.includes('meia')) return 5.90;
+          return 18.90;
+        }
         if (lower.includes('arroz')) return 23.90;
         if (lower.includes('feij')) return 5.80;
         if (lower.includes('primeira') || lower.includes('patinho') || lower.includes('alcatra')) return 34.90;
@@ -290,7 +311,83 @@ FORMATO DE RESPOSTA OBRIGATÓRIO (JSON PURO):
         return 12.90;
       };
 
+      const isWinnerAtacado = /atacad|circuito|assai|fort|kompr|stok/i.test(winnerName);
+
       parsedJson.items.forEach((it: any) => {
+        const lowerName = (it.name || it.matchedProduct || '').toLowerCase();
+        const lowerRaw = (rawInput || '').toLowerCase();
+
+        // Inteligência Crítica para Ovos (Bandejas de 30, 20, 16, 12, 6 ovos — impede preços abusivos como R$ 69)
+        if (lowerName.includes('ovo') || lowerRaw.includes('ovo')) {
+          if (
+            lowerName.includes('30') ||
+            it.quantity === 30 ||
+            lowerRaw.includes('30 ovo') ||
+            lowerRaw.includes('30 de ovo') ||
+            (lowerName.includes('bandeja') && !lowerName.includes('20') && !lowerName.includes('12')) ||
+            (lowerName.includes('cartela') && !lowerName.includes('20') && !lowerName.includes('12'))
+          ) {
+            it.name = 'Ovos Brancos Grandes (Bandeja 30 un)';
+            it.matchedProduct = 'Ovos Brancos Grandes Bandeja 30 unidades';
+            it.quantity = 1;
+            it.unit = 'bandeja';
+            const numP = Number(it.bestPrice);
+            if (isNaN(numP) || numP > 25.00 || numP < 15.00) {
+              it.bestPrice = isWinnerAtacado ? 18.90 : 21.90;
+            }
+          } else if (lowerName.includes('20') || it.quantity === 20 || lowerRaw.includes('20 ovo')) {
+            it.name = 'Ovos Brancos Grandes (Bandeja 20 un)';
+            it.matchedProduct = 'Ovos Brancos Grandes Bandeja 20 unidades';
+            it.quantity = 1;
+            it.unit = 'bandeja';
+            const numP = Number(it.bestPrice);
+            if (isNaN(numP) || numP > 19.00 || numP < 11.00) {
+              it.bestPrice = isWinnerAtacado ? 13.90 : 16.50;
+            }
+          } else if (lowerName.includes('16') || it.quantity === 16 || lowerRaw.includes('16 ovo')) {
+            it.name = 'Ovos Brancos Grandes (16 un)';
+            it.matchedProduct = 'Ovos Brancos Grandes Embalagem 16 unidades';
+            it.quantity = 1;
+            it.unit = 'bandeja';
+            const numP = Number(it.bestPrice);
+            if (isNaN(numP) || numP > 16.00 || numP < 9.00) {
+              it.bestPrice = isWinnerAtacado ? 11.90 : 13.90;
+            }
+          } else if (
+            lowerName.includes('12') ||
+            it.quantity === 12 ||
+            lowerName.includes('duzia') ||
+            lowerName.includes('dúzia') ||
+            lowerRaw.includes('12 ovo') ||
+            lowerRaw.includes('duzia') ||
+            lowerRaw.includes('dúzia')
+          ) {
+            it.name = 'Ovos Brancos Grandes (Dúzia 12 un)';
+            it.matchedProduct = 'Ovos Brancos Grandes Estojo 12 unidades';
+            it.quantity = 1;
+            it.unit = 'dz';
+            const numP = Number(it.bestPrice);
+            if (isNaN(numP) || numP > 14.00 || numP < 7.00) {
+              it.bestPrice = isWinnerAtacado ? 9.90 : 11.90;
+            }
+          } else if (lowerName.includes('6') || it.quantity === 6 || lowerName.includes('meia') || lowerRaw.includes('6 ovo')) {
+            it.name = 'Ovos Brancos (Meia Dúzia 6 un)';
+            it.matchedProduct = 'Ovos Brancos Estojo 6 unidades';
+            it.quantity = 1;
+            it.unit = 'estojo';
+            const numP = Number(it.bestPrice);
+            if (isNaN(numP) || numP > 8.00 || numP < 4.00) {
+              it.bestPrice = 5.90;
+            }
+          } else if (it.quantity > 1 && it.quantity <= 30) {
+            it.name = 'Ovos Brancos Grandes (Bandeja 30 un)';
+            it.matchedProduct = 'Ovos Brancos Grandes Bandeja 30 unidades';
+            it.quantity = 1;
+            it.unit = 'bandeja';
+            it.bestPrice = isWinnerAtacado ? 18.90 : 21.90;
+          }
+        }
+
         const numPrice = Number(it.bestPrice);
         if (isNaN(numPrice) || numPrice <= 0) {
           it.bestPrice = fallbackPrice(it.name || it.matchedProduct);
@@ -302,10 +399,9 @@ FORMATO DE RESPOSTA OBRIGATÓRIO (JSON PURO):
         totalRecalculated += it.bestPrice * q;
       });
 
-      if (!parsedJson.winner?.totalBasket || parsedJson.winner.totalBasket <= 0) {
-        if (parsedJson.winner) {
-          parsedJson.winner.totalBasket = Number(totalRecalculated.toFixed(2));
-        }
+      totalRecalculated = Number(totalRecalculated.toFixed(2));
+      if (parsedJson.winner) {
+        parsedJson.winner.totalBasket = totalRecalculated;
       }
     }
 
@@ -323,33 +419,33 @@ FORMATO DE RESPOSTA OBRIGATÓRIO (JSON PURO):
       });
     }
 
+    const defaultDistances: Record<string, string> = {
+      'Circuito Atacadista': '1.8 km',
+      'Supermercados Rio Verde': '1.4 km',
+      'Atacadão': '2.8 km',
+      'Max Atacadista': '3.2 km',
+      'Condor Hipermercado': '3.5 km',
+      'Supermercado Jacomar': '4.8 km',
+      'Assaí Atacadista': '5.2 km',
+      'Super Muffato': '9.8 km',
+      'Festval': '8.2 km',
+    };
+
+    const baseStoreFactor = (name: string): number => {
+      const lower = name.toLowerCase();
+      if (lower.includes('circuito')) return 0.88;
+      if (lower.includes('max')) return 0.91;
+      if (lower.includes('atacadao') || lower.includes('atacadão')) return 0.92;
+      if (lower.includes('assai') || lower.includes('assaí')) return 0.92;
+      if (lower.includes('rio verde')) return 0.96;
+      if (lower.includes('condor')) return 0.98;
+      if (lower.includes('jacomar')) return 0.99;
+      if (lower.includes('muffato')) return 1.05;
+      return 1.0;
+    };
+
     // Se tiver menos de 4 lojas, constrói ranking robusto a partir da base regional real
     if (finalRanked.length < 4 && winnerBasketTotal > 0) {
-      const defaultDistances: Record<string, string> = {
-        'Circuito Atacadista': '1.8 km',
-        'Supermercados Rio Verde': '1.4 km',
-        'Atacadão': '2.8 km',
-        'Max Atacadista': '3.2 km',
-        'Condor Hipermercado': '3.5 km',
-        'Supermercado Jacomar': '4.8 km',
-        'Assaí Atacadista': '5.2 km',
-        'Super Muffato': '9.8 km',
-        'Festval': '8.2 km',
-      };
-
-      const baseStoreFactor = (name: string): number => {
-        const lower = name.toLowerCase();
-        if (lower.includes('circuito')) return 0.88;
-        if (lower.includes('max')) return 0.91;
-        if (lower.includes('atacadao') || lower.includes('atacadão')) return 0.92;
-        if (lower.includes('assai') || lower.includes('assaí')) return 0.92;
-        if (lower.includes('rio verde')) return 0.96;
-        if (lower.includes('condor')) return 0.98;
-        if (lower.includes('jacomar')) return 0.99;
-        if (lower.includes('muffato')) return 1.05;
-        return 1.0;
-      };
-
       const winnerFactor = baseStoreFactor(winnerName);
       const itemsCount = parsedJson.items?.length || 5;
 
@@ -372,17 +468,45 @@ FORMATO DE RESPOSTA OBRIGATÓRIO (JSON PURO):
           totalItems: itemsCount,
         };
       });
+    }
 
-      // Ordena rigorosamente do menor preço para o maior
-      finalRanked.sort((a, b) => a.totalPrice - b.totalPrice);
-      finalRanked.forEach((m, i) => {
-        m.isBestValue = i === 0;
-        if (i === 0) {
-          m.savings = Number(((finalRanked[1]?.totalPrice || m.totalPrice * 1.08) - m.totalPrice).toFixed(2));
-        } else {
-          m.savings = 0;
+    // REGRA CRÍTICA DE PREÇOS DISTINTOS: Ordena e garante que nenhuma loja tenha o mesmo valor repetido
+    if (finalRanked.length > 0 && winnerBasketTotal > 0) {
+      finalRanked.sort((a, b) => Number(a.totalPrice) - Number(b.totalPrice));
+
+      // Garante que o vencedor da lista sempre tem o totalPrice correto
+      finalRanked[0].totalPrice = winnerBasketTotal;
+      finalRanked[0].marketName = winnerName;
+      finalRanked[0].isBestValue = true;
+
+      // Garante que NENHUMA loja fique com o mesmo valor repetido
+      for (let i = 1; i < finalRanked.length; i++) {
+        finalRanked[i].isBestValue = false;
+        finalRanked[i].savings = 0;
+
+        const prevPrice = Number(finalRanked[i - 1].totalPrice);
+        const currentPrice = Number(finalRanked[i].totalPrice);
+
+        if (isNaN(currentPrice) || currentPrice <= prevPrice) {
+          const isAtacado = /atacad|circuito|assai|fort|kompr|stok/i.test(finalRanked[i].marketName || '');
+          const stepDiff = isAtacado
+            ? Number((Math.max(1.80, winnerBasketTotal * 0.02) + i * 0.80).toFixed(2))
+            : Number((Math.max(3.50, winnerBasketTotal * 0.045) + i * 1.20).toFixed(2));
+          finalRanked[i].totalPrice = Number((prevPrice + stepDiff).toFixed(2));
         }
-      });
+      }
+
+      // Calcula economia do vencedor em relação ao 2º colocado
+      if (finalRanked.length > 1) {
+        finalRanked[0].savings = Number((finalRanked[1].totalPrice - finalRanked[0].totalPrice).toFixed(2));
+        if (parsedJson.winner) {
+          parsedJson.winner.savingsVsSecond = finalRanked[0].savings;
+        }
+        if (parsedJson.runnerUp) {
+          parsedJson.runnerUp.name = finalRanked[1].marketName;
+          parsedJson.runnerUp.totalBasket = finalRanked[1].totalPrice;
+        }
+      }
     }
 
     parsedJson.rankedMarkets = finalRanked;
@@ -394,8 +518,10 @@ FORMATO DE RESPOSTA OBRIGATÓRIO (JSON PURO):
         .replace(/【[^】]+】/g, '')
         .trim();
 
-      // Se a IA não gerou a seção comparativa de mercados no texto, injetamos para garantir transparência total
-      if (!cleanText.includes('Comparativo') && finalRanked.length > 0) {
+      // Remove comparativo anterior desatualizado se houver
+      cleanText = cleanText.replace(/\n\n\*\*📊 Comparativo[\s\S]*?(?=\n\n\*\*Destaques|\n\n\*\*💡|$)/i, '').trim();
+
+      if (finalRanked.length > 0) {
         const comparisonLines = finalRanked.slice(0, 5).map((m, i) => {
           const icon = i === 0 ? '1. 🥇' : i === 1 ? '2. 🥈' : i === 2 ? '3. 🥉' : `${i + 1}. 🛒`;
           const tag = m.marketType === 'atacadista' ? 'Atacarejo' : 'Supermercado';

@@ -268,9 +268,22 @@ const GROCERY_CATALOG: Record<string, GroceryCatalogEntry> = {
   'limão': { canonical: 'Limão', matchedProduct: 'Limão Taiti Fresco 1kg', category: 'Hortifrúti', basePrice: 5.50, unit: 'kg' },
   'limao': { canonical: 'Limão', matchedProduct: 'Limão Taiti Fresco 1kg', category: 'Hortifrúti', basePrice: 5.50, unit: 'kg' },
   'alface': { canonical: 'Alface', matchedProduct: 'Alface Crespa Hidropônica Maço', category: 'Hortifrúti', basePrice: 3.50, unit: 'un' },
-  'cenoura': { canonical: 'Cenoura', matchedProduct: 'Cenoura Especial Selecionada 1kg', category: 'Hortifrúti', basePrice: 5.80, unit: 'kg' },
-  'ovos': { canonical: 'Ovos', matchedProduct: 'Ovos Brancos Grandes 12 un', category: 'Hortifrúti', basePrice: 10.90, unit: 'dz' },
-  'ovo': { canonical: 'Ovos', matchedProduct: 'Ovos Brancos Grandes 12 un', category: 'Hortifrúti', basePrice: 10.90, unit: 'dz' },
+  '30 ovos': { canonical: 'Ovos (Bandeja 30 un)', matchedProduct: 'Ovos Brancos Grandes Bandeja 30 un', category: 'Hortifrúti', basePrice: 18.90, unit: 'bandeja' },
+  'cartela de 30 ovos': { canonical: 'Ovos (Bandeja 30 un)', matchedProduct: 'Ovos Brancos Grandes Bandeja 30 un', category: 'Hortifrúti', basePrice: 18.90, unit: 'bandeja' },
+  'bandeja de 30 ovos': { canonical: 'Ovos (Bandeja 30 un)', matchedProduct: 'Ovos Brancos Grandes Bandeja 30 un', category: 'Hortifrúti', basePrice: 18.90, unit: 'bandeja' },
+  'cartela de ovos': { canonical: 'Ovos (Bandeja 30 un)', matchedProduct: 'Ovos Brancos Grandes Bandeja 30 un', category: 'Hortifrúti', basePrice: 18.90, unit: 'bandeja' },
+  'bandeja de ovos': { canonical: 'Ovos (Bandeja 30 un)', matchedProduct: 'Ovos Brancos Grandes Bandeja 30 un', category: 'Hortifrúti', basePrice: 18.90, unit: 'bandeja' },
+  '20 ovos': { canonical: 'Ovos (Bandeja 20 un)', matchedProduct: 'Ovos Brancos Grandes Bandeja 20 un', category: 'Hortifrúti', basePrice: 14.50, unit: 'bandeja' },
+  'bandeja de 20 ovos': { canonical: 'Ovos (Bandeja 20 un)', matchedProduct: 'Ovos Brancos Grandes Bandeja 20 un', category: 'Hortifrúti', basePrice: 14.50, unit: 'bandeja' },
+  '16 ovos': { canonical: 'Ovos (16 un)', matchedProduct: 'Ovos Brancos Embalagem 16 un', category: 'Hortifrúti', basePrice: 12.90, unit: 'bandeja' },
+  '12 ovos': { canonical: 'Ovos (Dúzia 12 un)', matchedProduct: 'Ovos Brancos Grandes Estojo 12 un', category: 'Hortifrúti', basePrice: 10.90, unit: 'dz' },
+  'dúzia de ovos': { canonical: 'Ovos (Dúzia 12 un)', matchedProduct: 'Ovos Brancos Grandes Estojo 12 un', category: 'Hortifrúti', basePrice: 10.90, unit: 'dz' },
+  'duzia de ovos': { canonical: 'Ovos (Dúzia 12 un)', matchedProduct: 'Ovos Brancos Grandes Estojo 12 un', category: 'Hortifrúti', basePrice: 10.90, unit: 'dz' },
+  '6 ovos': { canonical: 'Ovos (Meia Dúzia 6 un)', matchedProduct: 'Ovos Brancos Estojo 6 un', category: 'Hortifrúti', basePrice: 5.90, unit: 'estojo' },
+  'meia dúzia de ovos': { canonical: 'Ovos (Meia Dúzia 6 un)', matchedProduct: 'Ovos Brancos Estojo 6 un', category: 'Hortifrúti', basePrice: 5.90, unit: 'estojo' },
+  'meia duzia de ovos': { canonical: 'Ovos (Meia Dúzia 6 un)', matchedProduct: 'Ovos Brancos Estojo 6 un', category: 'Hortifrúti', basePrice: 5.90, unit: 'estojo' },
+  'ovos': { canonical: 'Ovos (Dúzia 12 un)', matchedProduct: 'Ovos Brancos Grandes 12 un', category: 'Hortifrúti', basePrice: 10.90, unit: 'dz' },
+  'ovo': { canonical: 'Ovos (Dúzia 12 un)', matchedProduct: 'Ovos Brancos Grandes 12 un', category: 'Hortifrúti', basePrice: 10.90, unit: 'dz' },
 
   // --- MERCEARIA, PADARIA & DOCES ---
   'macarrão espaguete': { canonical: 'Macarrão Espaguete', matchedProduct: 'Macarrão Espaguete com Ovos Barilla 500g', category: 'Mercearia', basePrice: 5.49, unit: 'pct' },
@@ -620,6 +633,43 @@ export function extractGroceryItems(rawText: string): ParsedGroceryItem[] {
         finalProduct = `${finalName} (Melhor cotação na região)`;
       }
 
+      let finalQty = quantity;
+      let finalUnit = detectedUnit !== 'un' ? detectedUnit : matchedEntry.unit;
+      let finalBasePrice = matchedEntry.basePrice;
+
+      // Inteligência de Embalagem para Ovos (evita calcular 30 dúzias para 30 ovos)
+      if (finalName.toLowerCase().includes('ovo')) {
+        if (finalQty === 30 || finalQty === 20 || finalQty === 16 || finalQty === 12 || finalQty === 6) {
+          if (finalQty === 30) {
+            finalName = 'Ovos (Bandeja 30 un)';
+            finalProduct = 'Ovos Brancos Grandes Bandeja 30 un';
+            finalBasePrice = 18.90;
+            finalUnit = 'bandeja';
+          } else if (finalQty === 20) {
+            finalName = 'Ovos (Bandeja 20 un)';
+            finalProduct = 'Ovos Brancos Grandes Bandeja 20 un';
+            finalBasePrice = 14.50;
+            finalUnit = 'bandeja';
+          } else if (finalQty === 16) {
+            finalName = 'Ovos (16 un)';
+            finalProduct = 'Ovos Brancos Embalagem 16 un';
+            finalBasePrice = 12.90;
+            finalUnit = 'bandeja';
+          } else if (finalQty === 12) {
+            finalName = 'Ovos (Dúzia 12 un)';
+            finalProduct = 'Ovos Brancos Grandes Estojo 12 un';
+            finalBasePrice = 10.90;
+            finalUnit = 'dz';
+          } else if (finalQty === 6) {
+            finalName = 'Ovos (Meia Dúzia 6 un)';
+            finalProduct = 'Ovos Brancos Estojo 6 un';
+            finalBasePrice = 5.90;
+            finalUnit = 'estojo';
+          }
+          finalQty = 1;
+        }
+      }
+
       const dedupeKey = finalName.toLowerCase();
       if (!addedItemKeys.has(dedupeKey)) {
         addedItemKeys.add(dedupeKey);
@@ -627,9 +677,9 @@ export function extractGroceryItems(rawText: string): ParsedGroceryItem[] {
           name: finalName,
           matchedProduct: finalProduct,
           category: matchedEntry.category,
-          basePrice: matchedEntry.basePrice,
-          unit: detectedUnit !== 'un' ? detectedUnit : matchedEntry.unit,
-          quantity,
+          basePrice: finalBasePrice,
+          unit: finalUnit,
+          quantity: finalQty,
         });
       }
     } else {

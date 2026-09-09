@@ -161,6 +161,7 @@ export default function AppPage() {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const mainScrollRef = useRef<HTMLElement | null>(null);
   const prevMessagesCountRef = useRef(messages.length);
+  const isAiQuotedRef = useRef(false);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -513,6 +514,12 @@ export default function AppPage() {
       return;
     }
 
+    // Se a cotação acabou de vir da IA em tempo real, mantém os preços individuais da IA intactos
+    if (isAiQuotedRef.current) {
+      isAiQuotedRef.current = false;
+      return;
+    }
+
     const currentWinnerName = items[0]?.bestMarket?.name || markets.find((m) => m.isBestValue)?.marketName || allAvailableMarkets[0]?.marketName;
     const totalCurrent = items.reduce((sum, item) => {
       const p = item.bestMarket?.price || item.basePrice || 12.50;
@@ -522,24 +529,55 @@ export default function AppPage() {
     setMarkets((prevMarkets) => {
       const listToRank = (prevMarkets && prevMarkets.length > 0) ? prevMarkets : allAvailableMarkets;
       const winner = listToRank.find((m) => m.marketName === currentWinnerName) || listToRank[0];
-      const savingsRatio = (winner.savings && winner.totalPrice > 0)
-        ? (winner.savings / winner.totalPrice)
-        : 0.11;
-
       const newWinnerTotal = Number(totalCurrent.toFixed(2));
-      const newSavings = Number((newWinnerTotal * savingsRatio).toFixed(2));
+      const winnerPrevTotal = winner.totalPrice > 0 ? winner.totalPrice : newWinnerTotal;
 
-      return listToRank.map((m) => {
+      const updated = listToRank.map((m, idx) => {
         const isWin = m.marketName === winner.marketName;
+        if (isWin) {
+          return {
+            ...m,
+            totalPrice: newWinnerTotal,
+            coveredItems: items.length,
+            totalItems: items.length,
+            isBestValue: true,
+          };
+        }
+
+        // Calcula a proporção individual da rede em relação ao vencedor
+        let ratio = (winnerPrevTotal > 0 && m.totalPrice > winnerPrevTotal)
+          ? (m.totalPrice / winnerPrevTotal)
+          : 0;
+
+        if (ratio <= 1) {
+          const isAtacado = m.marketType === 'atacadista' || /atacad|circuito|assai|fort|kompr|stok/i.test(m.marketName);
+          ratio = isAtacado ? 1.025 + idx * 0.015 : 1.07 + idx * 0.025;
+        }
+
+        const calcPrice = Number((newWinnerTotal * ratio).toFixed(2));
         return {
           ...m,
-          totalPrice: isWin ? newWinnerTotal : Number((newWinnerTotal + (isWin ? 0 : (newSavings > 0 ? newSavings : 15.00))).toFixed(2)),
+          totalPrice: calcPrice,
           coveredItems: items.length,
           totalItems: items.length,
-          savings: isWin ? newSavings : 0,
-          isBestValue: isWin,
+          savings: 0,
+          isBestValue: false,
         };
       });
+
+      // Ordena rigorosamente do menor preço para o maior e garante que nenhuma loja repita o valor
+      updated.sort((a, b) => a.totalPrice - b.totalPrice);
+      for (let i = 1; i < updated.length; i++) {
+        if (updated[i].totalPrice <= updated[i - 1].totalPrice) {
+          updated[i].totalPrice = Number((updated[i - 1].totalPrice + 2.50 + i * 0.80).toFixed(2));
+        }
+      }
+
+      if (updated.length > 1) {
+        updated[0].savings = Number((updated[1].totalPrice - updated[0].totalPrice).toFixed(2));
+      }
+
+      return updated;
     });
   }, [items, stateCode]);
 
@@ -825,7 +863,7 @@ export default function AppPage() {
                 logoColor: idx === 0 ? '#0B0E11' : idx === 1 ? '#F57C00' : idx === 2 ? '#E65100' : idx === 3 ? '#007A33' : '#1565C0',
                 coveredItems: rm.coveredItems || data.items.length,
                 totalItems: rm.totalItems || data.items.length,
-                totalPrice: Number(rm.totalPrice || (idx === 0 ? winnerTotal : winnerTotal + savingsVsSecond)),
+                totalPrice: Number(rm.totalPrice || (idx === 0 ? winnerTotal : Number((winnerTotal * (1 + idx * 0.035)).toFixed(2)))),
                 savings: Number(rm.savings || (idx === 0 ? savingsVsSecond : 0)),
                 isBestValue: idx === 0,
                 clubDiscounts: 0,
@@ -854,7 +892,7 @@ export default function AppPage() {
                 logoColor: '#F57C00',
                 coveredItems: data.items.length,
                 totalItems: data.items.length,
-                totalPrice: Number(data.runnerUp.totalBasket) || Number((winnerTotal + savingsVsSecond).toFixed(2)),
+                totalPrice: Number(data.runnerUp.totalBasket) || Number((winnerTotal * 1.035).toFixed(2)),
                 savings: 0,
                 isBestValue: false,
                 clubDiscounts: 0,
@@ -864,14 +902,26 @@ export default function AppPage() {
             ];
           }
 
-          if (newMarkets.length > 0) {
-            setMarkets(newMarkets);
-          }
-
           const getSafePrice = (productName: string, rawPrice: any): number => {
             const num = Number(rawPrice);
-            if (!isNaN(num) && num > 0) return Number(num.toFixed(2));
+            if (!isNaN(num) && num > 0) {
+              const lower = (productName || '').toLowerCase();
+              if (lower.includes('ovo') && num > 25) {
+                if (lower.includes('30')) return 18.90;
+                if (lower.includes('20')) return 14.50;
+                return 18.90;
+              }
+              return Number(num.toFixed(2));
+            }
             const lower = (productName || '').toLowerCase();
+            if (lower.includes('ovo')) {
+              if (lower.includes('30')) return 18.90;
+              if (lower.includes('20')) return 14.50;
+              if (lower.includes('16')) return 12.90;
+              if (lower.includes('12') || lower.includes('duzia') || lower.includes('dúzia')) return 10.90;
+              if (lower.includes('6') || lower.includes('meia')) return 5.90;
+              return 18.90;
+            }
             if (lower.includes('primeira') || lower.includes('patinho') || lower.includes('alcatra')) return 34.90;
             if (lower.includes('segunda') || lower.includes('acém') || lower.includes('acem')) return 22.90;
             if (lower.includes('arroz')) return 25.90;
@@ -889,15 +939,44 @@ export default function AppPage() {
           };
 
           const newItemsToAdd: ListItem[] = data.items.map((it: any, idx: number) => {
-            const price = getSafePrice(it.name || it.matchedProduct, it.bestPrice);
+            let itemName = it.name || it.matchedProduct || 'Produto';
+            let itemQuantity = it.quantity || 1;
+            let itemUnit = it.unit || 'un';
+
+            const lower = (itemName + ' ' + (it.matchedProduct || '')).toLowerCase();
+            if (lower.includes('ovo')) {
+              if (itemQuantity === 30 || lower.includes('30') || it.bestPrice > 25) {
+                itemName = 'Ovos (Bandeja 30 un)';
+                itemQuantity = 1;
+                itemUnit = 'bandeja';
+              } else if (itemQuantity === 20 || lower.includes('20')) {
+                itemName = 'Ovos (Bandeja 20 un)';
+                itemQuantity = 1;
+                itemUnit = 'bandeja';
+              } else if (itemQuantity === 16 || lower.includes('16')) {
+                itemName = 'Ovos (16 un)';
+                itemQuantity = 1;
+                itemUnit = 'bandeja';
+              } else if (itemQuantity === 12 || lower.includes('12') || lower.includes('duzia') || lower.includes('dúzia')) {
+                itemName = 'Ovos (Dúzia 12 un)';
+                itemQuantity = 1;
+                itemUnit = 'dz';
+              } else if (itemQuantity === 6 || lower.includes('6') || lower.includes('meia')) {
+                itemName = 'Ovos (Meia Dúzia 6 un)';
+                itemQuantity = 1;
+                itemUnit = 'estojo';
+              }
+            }
+
+            const price = getSafePrice(itemName, it.bestPrice);
             return {
               id: `item-${Date.now()}-${idx}`,
-              name: it.name || it.matchedProduct || 'Produto',
-              matchedItem: it.matchedProduct || it.name,
+              name: itemName,
+              matchedItem: it.matchedProduct || itemName,
               basePrice: price,
-              quantity: it.quantity || 1,
-              unit: it.unit || 'un',
-              category: it.category || 'Geral',
+              quantity: itemQuantity,
+              unit: itemUnit,
+              category: it.category || (lower.includes('ovo') ? 'Hortifrúti' : 'Geral'),
               checked: false,
               bestMarket: {
                 name: winnerName,
@@ -907,6 +986,11 @@ export default function AppPage() {
             };
           });
 
+          // Sinaliza para o useEffect de itens não sobrescrever a cotação rica da IA
+          isAiQuotedRef.current = true;
+          if (newMarkets.length > 0) {
+            setMarkets(newMarkets);
+          }
           setItems((prev) => [...newItemsToAdd, ...prev]);
         }
 
@@ -919,8 +1003,24 @@ export default function AppPage() {
 
         const fallbackItemPrice = (productName: string, rawPrice: any): number => {
           const num = Number(rawPrice);
-          if (!isNaN(num) && num > 0) return Number(num.toFixed(2));
+          if (!isNaN(num) && num > 0) {
+            const lower = (productName || '').toLowerCase();
+            if (lower.includes('ovo') && num > 25) {
+              if (lower.includes('30')) return 18.90;
+              if (lower.includes('20')) return 14.50;
+              return 18.90;
+            }
+            return Number(num.toFixed(2));
+          }
           const lower = (productName || '').toLowerCase();
+          if (lower.includes('ovo')) {
+            if (lower.includes('30')) return 18.90;
+            if (lower.includes('20')) return 14.50;
+            if (lower.includes('16')) return 12.90;
+            if (lower.includes('12') || lower.includes('duzia') || lower.includes('dúzia')) return 10.90;
+            if (lower.includes('6') || lower.includes('meia')) return 5.90;
+            return 18.90;
+          }
           if (lower.includes('primeira') || lower.includes('patinho') || lower.includes('alcatra')) return 34.90;
           if (lower.includes('segunda') || lower.includes('acém') || lower.includes('acem')) return 22.90;
           if (lower.includes('arroz')) return 25.90;
