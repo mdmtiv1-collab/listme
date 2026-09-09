@@ -92,7 +92,7 @@ export default function LandingPage() {
               priority
             />
           </div>
-          <span className="font-sans text-2xl font-black tracking-tight text-black logo-chromatic select-none">
+          <span className="font-sans text-2xl font-black tracking-tight text-neutral-950 select-none">
             list<span className="text-[#84E000]">.me</span>
           </span>
         </Link>
@@ -128,7 +128,7 @@ export default function LandingPage() {
 
         {/* Subtitle */}
         <p className="text-sm sm:text-base text-neutral-600 max-w-2xl leading-relaxed mb-8">
-          O <strong>list<span className="text-[#497D00]">.me</span></strong> monta sua lista de compras, por voz, foto ou texto e calcula em segundos em qual mercado da sua região a sua compra completa fica mais barata.
+          O <strong>list<span className="text-[#84E000]">.me</span></strong> monta sua lista de compras, por voz, foto ou texto e calcula em segundos em qual mercado da sua região a sua compra completa fica mais barata.
         </p>
 
         {/* Action CTAs */}
@@ -366,7 +366,7 @@ export default function LandingPage() {
             EXPERIÊNCIA SEM ESFORÇO
           </div>
           <h2 className="font-sans text-2xl sm:text-4xl font-bold text-neutral-950 tracking-tight leading-tight">
-            Se você sabe mandar um áudio no WhatsApp, já sabe economizar com o list.me
+            Se você sabe mandar um áudio no WhatsApp, já sabe economizar com o list<span className="text-[#84E000]">.me</span>
           </h2>
           <p className="text-xs sm:text-sm text-neutral-600 mt-2.5 leading-relaxed">
             Nada de abrir dezenas de panfletos de papel, digitar tudo na mão ou comparar mercado por mercado. Você fala naturalmente e a IA faz a cotação em segundos.
@@ -384,7 +384,7 @@ export default function LandingPage() {
               </div>
               <div>
                 <span className="font-bold text-xs sm:text-sm text-neutral-900 block leading-tight">
-                  Assistente <span className="logo-chromatic-sm text-black">list<span className="text-[#84E000]">.me</span></span>
+                  Assistente list<span className="text-[#84E000]">.me</span>
                 </span>
                 <span className="text-[10px] text-[#497D00] font-medium flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#84E000] animate-pulse" />
@@ -547,7 +547,7 @@ export default function LandingPage() {
 
             <div className="bg-neutral-950 text-white p-4 sm:p-5 rounded-2xl shadow-floating border border-[#84E000]/40 flex flex-col justify-center">
               <span className="text-[10px] font-mono uppercase text-[#84E000] font-bold block mb-1">
-                CUSTO DO LIST.ME
+                CUSTO DO LIST<span className="text-[#84E000]">.ME</span>
               </span>
               <span className="font-mono text-xl sm:text-2xl font-bold text-white block">
                 R$ 10,82<span className="text-xs font-normal text-neutral-400">/mês</span>
@@ -1081,7 +1081,7 @@ export default function LandingPage() {
               </h3>
 
               <p className="text-xs sm:text-sm text-neutral-600 leading-relaxed mb-5">
-                Você não corre risco algum. Assine o plano ideal para você e use o <strong>list.me</strong> em todas as compras da sua semana. Se por qualquer motivo você não economizar muito mais do que o valor investido ou achar que o aplicativo não é para você, basta solicitar o reembolso em até 7 dias e <strong>nós devolvemos 100% do seu dinheiro</strong>. Sem perguntas, sem burocracia e sem letras miúdas.
+                Você não corre risco algum. Assine o plano ideal para você e use o <strong>list<span className="text-[#84E000]">.me</span></strong> em todas as compras da sua semana. Se por qualquer motivo você não economizar muito mais do que o valor investido ou achar que o aplicativo não é para você, basta solicitar o reembolso em até 7 dias e <strong>nós devolvemos 100% do seu dinheiro</strong>. Sem perguntas, sem burocracia e sem letras miúdas.
               </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 border-t border-black/[0.05]">
@@ -1115,7 +1115,7 @@ export default function LandingPage() {
             Perguntas Frequentes
           </h2>
           <p className="text-xs sm:text-sm text-neutral-500 leading-relaxed">
-            Tudo o que você precisa saber sobre como o <strong>list.me</strong> organiza sua rotina e economiza seu dinheiro.
+            Tudo o que você precisa saber sobre como o <strong>list<span className="text-[#84E000]">.me</span></strong> organiza sua rotina e economiza seu dinheiro.
           </p>
         </div>
 
@@ -1192,7 +1192,7 @@ export default function LandingPage() {
               Pronto para parar de gastar a mais no mercado?
             </h4>
             <p className="text-xs text-neutral-400 mt-1 max-w-md">
-              Acesse o list.me agora e descubra em segundos o mercado mais barato da sua cidade.
+              Acesse o <strong>list<span className="text-[#84E000]">.me</span></strong> agora e descubra em segundos o mercado mais barato da sua cidade.
             </p>
           </div>
           <a
@@ -1216,7 +1216,7 @@ export default function LandingPage() {
               className="w-full h-full object-contain"
             />
           </div>
-          <span className="font-sans text-base font-black tracking-tight text-neutral-950 logo-chromatic-sm select-none">
+          <span className="font-sans text-base font-black tracking-tight text-neutral-950 select-none">
             list<span className="text-[#84E000]">.me</span>
           </span>
           <span>— Inteligência de compras para sua casa.</span>
