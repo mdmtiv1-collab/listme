@@ -33,7 +33,8 @@ import {
   CheckCheck,
   CheckCircle2,
   Receipt,
-  LogOut
+  LogOut,
+  X
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -2603,172 +2604,194 @@ export default function AppPage() {
 
         {/* Modal: Perfil & Configurações */}
         {isProfileModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            <div className="bg-white rounded-[28px] p-6 max-w-sm w-full shadow-floating hairline-border animate-in fade-in zoom-in duration-200">
-              <h3 className="font-serif text-xl font-bold text-neutral-900 mb-1">
-                Configurações da Residência
-              </h3>
-              <p className="text-xs text-neutral-500 mb-3">
-                Localização: <strong>{city}, {stateCode}</strong>
-              </p>
-
-              {/* Informações da Conta do Assinante */}
-              <div className="bg-neutral-50 rounded-2xl p-3 mb-4 border border-neutral-200/80 flex items-center justify-between gap-2">
-                <div className="min-w-0">
-                  <span className="text-neutral-400 block text-[9px] font-mono uppercase font-bold">Assinatura Ativa</span>
-                  <span className="font-bold text-neutral-900 text-xs truncate block">{userName || 'Assinante LIST.ME'}</span>
-                  {userEmail && <span className="text-neutral-500 text-[10px] truncate block">{userEmail}</span>}
-                </div>
-                <span className="px-2 py-1 rounded-full bg-[#84E000]/20 text-[#497D00] text-[9px] font-mono font-bold uppercase shrink-0 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#497D00] animate-pulse" />
-                  Ativo
-                </span>
-              </div>
-
-              <div className="space-y-3 mb-5">
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto overscroll-contain animate-in fade-in duration-200"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setIsProfileModalOpen(false);
+            }}
+          >
+            <div className="bg-white rounded-[28px] max-w-sm w-full shadow-floating hairline-border flex flex-col max-h-[88dvh] overflow-hidden my-auto animate-in zoom-in-95 duration-200">
+              {/* Header fixo com botão Fechar */}
+              <div className="p-5 pb-3 border-b border-black/[0.06] flex items-center justify-between shrink-0 bg-white">
                 <div>
-                  <label className="text-[10px] font-mono uppercase text-neutral-400 block mb-1">
-                    Nome da Residência
-                  </label>
-                  <input
-                    type="text"
-                    value={houseName}
-                    onChange={(e) => setHouseName(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-neutral-50 hairline-border rounded-xl text-xs text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#84E000]"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-[10px] font-mono uppercase text-neutral-400 block mb-1">
-                    Seu Nome
-                  </label>
-                  <input
-                    type="text"
-                    value={userName}
-                    onChange={(e) => setUserName(e.target.value)}
-                    placeholder="Ex: Mariana"
-                    className="w-full px-3.5 py-2.5 bg-neutral-50 hairline-border rounded-xl text-xs text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#84E000]"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-[10px] font-mono uppercase text-neutral-400 block mb-1">
-                    Cidade
-                  </label>
-                  <input
-                    type="text"
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-neutral-50 hairline-border rounded-xl text-xs text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#84E000]"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-[10px] font-mono uppercase text-neutral-400 block mb-1">
-                    Bairro / Região
-                  </label>
-                  <input
-                    type="text"
-                    value={neighborhood}
-                    onChange={(e) => setNeighborhood(e.target.value)}
-                    placeholder="Ex: Maracanã, Roça Grande, Centro, Batel..."
-                    className="w-full px-3.5 py-2.5 bg-neutral-50 hairline-border rounded-xl text-xs text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#84E000]"
-                  />
-                </div>
-
-                <div className="p-3 bg-[#F4FCE3] rounded-xl text-xs text-[#2A4800] leading-relaxed border border-[#D9F99D]">
-                  <strong className="block text-[10px] font-mono uppercase text-[#497D00] font-bold">Redes Ativas</strong>
-                  {markets.map(m => m.marketName).join(', ')}
-                </div>
-
-                {/* Status do Plano & Compartilhamento Familiar */}
-                <div className="p-3.5 bg-neutral-950 text-white rounded-2xl border border-neutral-800 space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono uppercase text-[#84E000] font-bold flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#84E000] animate-pulse" />
-                      PLANO FAMÍLIA ATIVO
-                    </span>
-                    <span className="text-[10px] font-mono text-neutral-400">Até 4 pessoas</span>
-                  </div>
-                  <p className="text-[11px] text-neutral-300 leading-snug">
-                    Convide membros da sua casa para adicionar produtos e acompanhar a mesma lista em tempo real.
+                  <h3 className="font-serif text-lg font-bold text-neutral-900 leading-tight">
+                    Configurações da Residência
+                  </h3>
+                  <p className="text-[11px] text-neutral-500 mt-0.5">
+                    Localização: <strong className="text-neutral-900">{city || 'Colombo'}{neighborhood ? ` (${neighborhood})` : ''}, {stateCode}</strong>
                   </p>
-                  <button
-                    onClick={() => {
-                      const text = `Oi! Te convidei para participar da lista de compras da nossa casa no LIST.ME (${houseName || 'Minha Casa'}).\n\nAcesse por aqui para montarmos a lista e vermos os preços mais baratos juntos em ${city}: https://list.me/app`;
-                      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-                    }}
-                    type="button"
-                    className="w-full py-2.5 px-3 bg-[#84E000] hover:bg-[#92F200] text-neutral-950 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition duration-200"
-                  >
-                    <Share2 size={12} /> Convidar Membro da Família
-                  </button>
                 </div>
-
-                {/* Botão para abrir o tutorial de instalação */}
-                <div className="bg-neutral-100 rounded-2xl p-3 border border-black/5 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <strong className="text-xs font-bold text-neutral-900 block truncate">
-                      Atalho na Tela de Início
-                    </strong>
-                    <span className="text-[10px] text-neutral-500 block truncate">
-                      Abra como aplicativo nativo no celular
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsProfileModalOpen(false);
-                      setIsInstallModalOpen(true);
-                    }}
-                    className="px-3 py-1.5 bg-neutral-950 hover:bg-[#84E000] hover:text-neutral-950 text-white rounded-xl text-[11px] font-bold shrink-0 transition"
-                  >
-                    Ver Como
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={() => {
-                    const currentProfile = { houseName, userName, city, neighborhood, state: stateCode };
-                    localStorage.setItem('listme_profile', JSON.stringify(currentProfile));
-                    setIsProfileModalOpen(false);
-                    showToast('Preferências atualizadas!');
-                  }}
-                  className="w-full py-2.5 bg-neutral-950 hover:bg-[#84E000] hover:text-neutral-950 text-white rounded-xl text-xs font-bold shadow-xs transition duration-200"
-                >
-                  Salvar Preferências
-                </button>
-
                 <button
                   type="button"
-                  onClick={() => {
-                    localStorage.removeItem('listme_user_session');
-                    setIsProfileModalOpen(false);
-                    setIsAuthenticated(false);
-                    showToast('Sessão encerrada com sucesso.');
-                  }}
-                  className="w-full py-2.5 text-center text-xs font-bold text-red-600 hover:bg-red-50 rounded-xl transition flex items-center justify-center gap-1.5 border border-red-200"
+                  onClick={() => setIsProfileModalOpen(false)}
+                  className="w-8 h-8 rounded-full bg-neutral-100 hover:bg-neutral-200 text-neutral-500 hover:text-neutral-900 flex items-center justify-center transition shrink-0 ml-2"
+                  aria-label="Fechar"
                 >
-                  <LogOut size={13} />
-                  Sair da Minha Conta
+                  <X size={16} />
                 </button>
+              </div>
 
-                <button
-                  onClick={handleResetAllData}
-                  className="w-full py-2 text-center text-xs text-neutral-400 hover:text-red-600 hover:bg-red-50/50 rounded-xl transition flex items-center justify-center gap-1.5"
-                >
-                  <RotateCcw size={12} />
-                  Redefinir localização e zerar dados
-                </button>
+              {/* Conteúdo rolável com scroll suave no celular */}
+              <div className="p-5 space-y-4 overflow-y-auto overscroll-contain flex-1">
+                {/* Informações da Conta do Assinante */}
+                <div className="bg-neutral-50 rounded-2xl p-3 border border-neutral-200/80 flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <span className="text-neutral-400 block text-[9px] font-mono uppercase font-bold">Assinatura Ativa</span>
+                    <span className="font-bold text-neutral-900 text-xs truncate block">{userName || 'Assinante LIST.ME'}</span>
+                    {userEmail && <span className="text-neutral-500 text-[10px] truncate block">{userEmail}</span>}
+                  </div>
+                  <span className="px-2 py-1 rounded-full bg-[#84E000]/20 text-[#497D00] text-[9px] font-mono font-bold uppercase shrink-0 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#497D00] animate-pulse" />
+                    Ativo
+                  </span>
+                </div>
 
-                <Link
-                  href="/"
-                  className="w-full py-2 text-center text-xs text-neutral-400 hover:text-neutral-800 transition"
-                >
-                  Ir para Landing Page
-                </Link>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-[10px] font-mono uppercase text-neutral-400 block mb-1 font-medium">
+                      Nome da Residência
+                    </label>
+                    <input
+                      type="text"
+                      value={houseName}
+                      onChange={(e) => setHouseName(e.target.value)}
+                      className="w-full px-3.5 py-2.5 bg-neutral-50 hairline-border rounded-xl text-xs text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#84E000]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-mono uppercase text-neutral-400 block mb-1 font-medium">
+                      Seu Nome
+                    </label>
+                    <input
+                      type="text"
+                      value={userName}
+                      onChange={(e) => setUserName(e.target.value)}
+                      placeholder="Ex: Mariana"
+                      className="w-full px-3.5 py-2.5 bg-neutral-50 hairline-border rounded-xl text-xs text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#84E000]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-mono uppercase text-neutral-400 block mb-1 font-medium">
+                      Cidade
+                    </label>
+                    <input
+                      type="text"
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      className="w-full px-3.5 py-2.5 bg-neutral-50 hairline-border rounded-xl text-xs text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#84E000]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-mono uppercase text-neutral-400 block mb-1 font-medium">
+                      Bairro / Região
+                    </label>
+                    <input
+                      type="text"
+                      value={neighborhood}
+                      onChange={(e) => setNeighborhood(e.target.value)}
+                      placeholder="Ex: Maracanã, Roça Grande, Centro, Batel..."
+                      className="w-full px-3.5 py-2.5 bg-neutral-50 hairline-border rounded-xl text-xs text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#84E000]"
+                    />
+                  </div>
+
+                  <div className="p-3 bg-[#F4FCE3] rounded-xl text-xs text-[#2A4800] leading-relaxed border border-[#D9F99D]">
+                    <strong className="block text-[10px] font-mono uppercase text-[#497D00] font-bold mb-0.5">Redes Ativas</strong>
+                    {markets.map(m => m.marketName).join(', ')}
+                  </div>
+
+                  {/* Status do Plano & Compartilhamento Familiar */}
+                  <div className="p-3.5 bg-neutral-950 text-white rounded-2xl border border-neutral-800 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono uppercase text-[#84E000] font-bold flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#84E000] animate-pulse" />
+                        PLANO FAMÍLIA ATIVO
+                      </span>
+                      <span className="text-[10px] font-mono text-neutral-400">Até 4 pessoas</span>
+                    </div>
+                    <p className="text-[11px] text-neutral-300 leading-snug">
+                      Convide membros da sua casa para adicionar produtos e acompanhar a mesma lista em tempo real.
+                    </p>
+                    <button
+                      onClick={() => {
+                        const text = `Oi! Te convidei para participar da lista de compras da nossa casa no LIST.ME (${houseName || 'Minha Casa'}).\n\nAcesse por aqui para montarmos a lista e vermos os preços mais baratos juntos em ${city}: https://list.me/app`;
+                        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+                      }}
+                      type="button"
+                      className="w-full py-2.5 px-3 bg-[#84E000] hover:bg-[#92F200] text-neutral-950 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition duration-200"
+                    >
+                      <Share2 size={12} /> Convidar Membro da Família
+                    </button>
+                  </div>
+
+                  {/* Botão para abrir o tutorial de instalação */}
+                  <div className="bg-neutral-100 rounded-2xl p-3 border border-black/5 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <strong className="text-xs font-bold text-neutral-900 block truncate">
+                        Atalho na Tela de Início
+                      </strong>
+                      <span className="text-[10px] text-neutral-500 block truncate">
+                        Abra como aplicativo nativo no celular
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsProfileModalOpen(false);
+                        setIsInstallModalOpen(true);
+                      }}
+                      className="px-3 py-1.5 bg-neutral-950 hover:bg-[#84E000] hover:text-neutral-950 text-white rounded-xl text-[11px] font-bold shrink-0 transition"
+                    >
+                      Ver Como
+                    </button>
+                  </div>
+                </div>
+
+                {/* Ações / Botões */}
+                <div className="flex flex-col gap-2 pt-2">
+                  <button
+                    onClick={() => {
+                      const currentProfile = { houseName, userName, city, neighborhood, state: stateCode };
+                      localStorage.setItem('listme_profile', JSON.stringify(currentProfile));
+                      setIsProfileModalOpen(false);
+                      showToast('Preferências atualizadas!');
+                    }}
+                    className="w-full py-3 bg-neutral-950 hover:bg-[#84E000] hover:text-neutral-950 text-white rounded-xl text-xs font-bold shadow-xs transition duration-200"
+                  >
+                    Salvar Preferências
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      localStorage.removeItem('listme_user_session');
+                      setIsProfileModalOpen(false);
+                      setIsAuthenticated(false);
+                      showToast('Sessão encerrada com sucesso.');
+                    }}
+                    className="w-full py-2.5 text-center text-xs font-bold text-red-600 hover:bg-red-50 rounded-xl transition flex items-center justify-center gap-1.5 border border-red-200"
+                  >
+                    <LogOut size={13} />
+                    Sair da Minha Conta
+                  </button>
+
+                  <button
+                    onClick={handleResetAllData}
+                    className="w-full py-2 text-center text-xs text-neutral-400 hover:text-red-600 hover:bg-red-50/50 rounded-xl transition flex items-center justify-center gap-1.5"
+                  >
+                    <RotateCcw size={12} />
+                    Redefinir localização e zerar dados
+                  </button>
+
+                  <Link
+                    href="/"
+                    className="w-full py-2 text-center text-xs text-neutral-400 hover:text-neutral-800 transition"
+                  >
+                    Ir para Landing Page
+                  </Link>
+                </div>
               </div>
             </div>
           </div>

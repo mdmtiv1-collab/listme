@@ -108,8 +108,8 @@ export default function OnboardingModal({ isOpen, onComplete }: OnboardingModalP
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-paper-50 rounded-3xl p-6 sm:p-7 max-w-sm w-full shadow-elevated hairline-border animate-in fade-in zoom-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto overscroll-contain animate-in fade-in duration-200">
+      <div className="bg-paper-50 rounded-3xl p-6 sm:p-7 max-w-sm w-full shadow-elevated hairline-border max-h-[88dvh] overflow-y-auto overscroll-contain my-auto animate-in zoom-in-95 duration-200">
         
         {/* Header */}
         <div className="flex items-center gap-3 mb-3.5">

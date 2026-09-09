@@ -37,11 +37,16 @@ export default function InstallTutorialModal({ isOpen, onClose }: InstallTutoria
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="bg-[#F8F7F4] rounded-[32px] max-w-sm w-full shadow-2xl border border-black/10 overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto overscroll-contain animate-in fade-in duration-200"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="bg-[#F8F7F4] rounded-[32px] max-w-sm w-full shadow-2xl border border-black/10 overflow-hidden flex flex-col max-h-[88dvh] my-auto animate-in zoom-in-95 duration-200">
         
         {/* Header com Logo e Fechar */}
-        <div className="p-5 pb-3 border-b border-black/[0.06] flex items-center justify-between bg-white/60">
+        <div className="p-5 pb-3 border-b border-black/[0.06] flex items-center justify-between bg-white/60 shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl overflow-hidden border border-black/10 bg-white shadow-xs shrink-0">
               <Image
@@ -71,7 +76,7 @@ export default function InstallTutorialModal({ isOpen, onClose }: InstallTutoria
           </button>
         </div>
 
-        <div className="p-5 space-y-4">
+        <div className="p-5 space-y-4 overflow-y-auto overscroll-contain flex-1">
           
           {/* Introdução */}
           <div className="text-center">

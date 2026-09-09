@@ -40,8 +40,13 @@ export default function PhotoUploadModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-paper-50 rounded-3xl p-6 max-w-sm w-full shadow-elevated hairline-border animate-in fade-in zoom-in duration-200">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto overscroll-contain animate-in fade-in duration-200"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="bg-paper-50 rounded-3xl p-6 max-w-sm w-full shadow-elevated hairline-border max-h-[88dvh] overflow-y-auto overscroll-contain my-auto animate-in zoom-in-95 duration-200">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-xl bg-[#F4FCE3] flex items-center justify-center text-[#497D00]">
