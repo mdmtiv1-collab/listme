@@ -3,8 +3,31 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'LIST.ME — Suas compras organizadas pelo menor preço da sua região',
-  description: 'O list.me monta sua lista de compras, por voz, foto ou texto e calcula em segundos em qual mercado da sua região a sua compra completa fica mais barata.',
+  description: 'O list.me monta sua lista de compras por voz, foto ou texto e calcula em segundos em qual mercado da sua região a sua compra completa fica mais barata.',
   manifest: '/manifest.json',
+  metadataBase: new URL('https://listmeapp.com.br'),
+  openGraph: {
+    title: 'LIST.ME — Suas compras organizadas pelo menor preço da sua região',
+    description: 'Monte sua lista por voz ou foto e descubra em segundos onde a sua compra completa fica mais barata.',
+    url: 'https://listmeapp.com.br',
+    siteName: 'LIST.ME',
+    locale: 'pt_BR',
+    type: 'website',
+    images: [
+      {
+        url: '/hero-mockup-v3.png',
+        width: 1200,
+        height: 630,
+        alt: 'LIST.ME Aplicativo',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'LIST.ME — Comparador Inteligente de Supermercados',
+    description: 'Monte sua lista por voz ou foto e calcule o mercado mais barato da sua região.',
+    images: ['/hero-mockup-v3.png'],
+  },
   icons: {
     icon: [
       { url: '/favicon.svg?v=2', type: 'image/svg+xml' },
