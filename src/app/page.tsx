@@ -302,57 +302,180 @@ export default function LandingPage() {
           <h2 className="font-sans text-2xl sm:text-4xl font-bold text-neutral-950 mt-1">
             Simples, rápido e feito para o seu dia a dia.
           </h2>
+          <p className="text-xs sm:text-sm text-neutral-500 mt-2">
+            Da lista falada na despensa até a rota física com o menor preço garantido.
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          <div className="bg-white hairline-border p-6 rounded-[24px] shadow-card">
-            <div className="w-10 h-10 rounded-2xl bg-neutral-950 text-[#84E000] flex items-center justify-center mb-4 font-mono font-bold">
-              01
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+          
+          {/* Passo 01 */}
+          <div className="group bg-white hairline-border p-5 sm:p-6 rounded-[28px] shadow-card hover:shadow-floating transition-all duration-300 flex flex-col justify-between relative overflow-hidden">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-10 h-10 rounded-2xl bg-neutral-950 text-[#84E000] flex items-center justify-center font-mono font-bold text-xs shadow-xs group-hover:scale-105 transition">
+                  01
+                </div>
+                <div className="w-9 h-9 rounded-2xl bg-neutral-100 flex items-center justify-center text-neutral-600 group-hover:bg-[#84E000]/15 group-hover:text-neutral-950 transition">
+                  <Mic size={16} />
+                </div>
+              </div>
+              <span className="text-[10px] font-mono uppercase text-[#497D00] font-bold block mb-1">
+                ENTRADA INTELIGENTE
+              </span>
+              <h3 className="text-base font-bold text-neutral-950 mb-2">
+                Dite ou envie foto
+              </h3>
+              <p className="text-xs text-neutral-500 leading-relaxed">
+                Fale pelo microfone olhando a despensa, fotografe o papel ou digite. A inteligência artificial organiza tudo em segundos.
+              </p>
             </div>
-            <h3 className="text-base font-bold text-neutral-950 mb-2">
-              Dite ou envie foto
-            </h3>
-            <p className="text-xs text-neutral-500 leading-relaxed">
-              Fale pelo microfone enquanto olha a despensa, envie foto da lista de papel ou digite o que precisa. A IA organiza tudo em segundos.
-            </p>
+
+            {/* Micro-UI: Waveform / Áudio */}
+            <div className="mt-4 pt-3 border-t border-black/[0.04]">
+              <div className="p-2.5 rounded-xl bg-neutral-50 border border-black/[0.04] flex items-center justify-between">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="flex items-center gap-0.5">
+                    <span className="w-0.5 h-3 bg-[#84E000] rounded-full animate-pulse" />
+                    <span className="w-0.5 h-4 bg-neutral-950 rounded-full animate-pulse delay-75" />
+                    <span className="w-0.5 h-2.5 bg-[#84E000] rounded-full animate-pulse delay-150" />
+                    <span className="w-0.5 h-3.5 bg-neutral-950 rounded-full animate-pulse delay-100" />
+                  </div>
+                  <span className="text-[10px] font-mono text-neutral-600 truncate">"café, leite, sabão..."</span>
+                </div>
+                <span className="text-[9px] font-mono text-[#497D00] bg-[#84E000]/15 px-1.5 py-0.5 rounded font-bold shrink-0">
+                  IA ativa
+                </span>
+              </div>
+            </div>
           </div>
 
-          <div className="bg-white hairline-border p-6 rounded-[24px] shadow-card">
-            <div className="w-10 h-10 rounded-2xl bg-neutral-950 text-[#84E000] flex items-center justify-center mb-4 font-mono font-bold">
-              02
+          {/* Passo 02 */}
+          <div className="group bg-white hairline-border p-5 sm:p-6 rounded-[28px] shadow-card hover:shadow-floating transition-all duration-300 flex flex-col justify-between relative overflow-hidden">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-10 h-10 rounded-2xl bg-neutral-950 text-[#84E000] flex items-center justify-center font-mono font-bold text-xs shadow-xs group-hover:scale-105 transition">
+                  02
+                </div>
+                <div className="w-9 h-9 rounded-2xl bg-neutral-100 flex items-center justify-center text-neutral-600 group-hover:bg-[#84E000]/15 group-hover:text-neutral-950 transition">
+                  <TrendingDown size={16} />
+                </div>
+              </div>
+              <span className="text-[10px] font-mono uppercase text-[#497D00] font-bold block mb-1">
+                COMPARAÇÃO TOTAL
+              </span>
+              <h3 className="text-base font-bold text-neutral-950 mb-2">
+                Cálculo da Cesta Completa
+              </h3>
+              <p className="text-xs text-neutral-500 leading-relaxed">
+                O motor cruza os preços de atacarejos e supermercados da sua região, indicando onde a sua lista inteira sai mais barata.
+              </p>
             </div>
-            <h3 className="text-base font-bold text-neutral-950 mb-2">
-              Cálculo da Cesta Completa
-            </h3>
-            <p className="text-xs text-neutral-500 leading-relaxed">
-              O motor compara os preços de todas as redes locais e indica onde a compra inteira sai mais barata em uma só ida ao mercado.
-            </p>
+
+            {/* Micro-UI: Comparador */}
+            <div className="mt-4 pt-3 border-t border-black/[0.04]">
+              <div className="p-2.5 rounded-xl bg-neutral-50 border border-black/[0.04] flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-full bg-[#84E000] text-neutral-950 flex items-center justify-center shrink-0 font-bold text-[10px]">
+                    ✓
+                  </div>
+                  <div className="leading-tight">
+                    <span className="text-[11px] font-bold text-neutral-900 block">Atacadão</span>
+                    <span className="text-[9px] font-mono text-neutral-400">R$ 342,80</span>
+                  </div>
+                </div>
+                <span className="text-[10px] font-mono font-bold text-[#497D00] bg-[#84E000]/20 px-1.5 py-0.5 rounded shrink-0">
+                  -R$ 75,20
+                </span>
+              </div>
+            </div>
           </div>
 
-          <div className="bg-white hairline-border p-6 rounded-[24px] shadow-card border-t-2 border-t-[#84E000]">
-            <div className="w-10 h-10 rounded-2xl bg-[#84E000] text-neutral-950 flex items-center justify-center mb-4 font-mono font-bold shadow-xs">
-              03
+          {/* Passo 03 (Destaque Novo: Rota por Corredores) */}
+          <div className="group bg-white hairline-border p-5 sm:p-6 rounded-[28px] shadow-card hover:shadow-floating transition-all duration-300 flex flex-col justify-between relative overflow-hidden border-t-2 border-t-[#84E000]">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-10 h-10 rounded-2xl bg-[#84E000] text-neutral-950 flex items-center justify-center font-mono font-bold text-xs shadow-xs group-hover:scale-105 transition">
+                  03
+                </div>
+                <div className="w-9 h-9 rounded-2xl bg-[#84E000]/15 flex items-center justify-center text-[#497D00]">
+                  <MapPin size={16} />
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="text-[10px] font-mono uppercase text-[#497D00] font-bold">
+                  ROTA DE MERCADO
+                </span>
+                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#84E000]/20 text-[#386000] uppercase font-bold">
+                  Novo
+                </span>
+              </div>
+              <h3 className="text-base font-bold text-neutral-950 mb-2">
+                Rota por Corredores
+              </h3>
+              <p className="text-xs text-neutral-500 leading-relaxed">
+                Itens dispostos na sequência física de compras (Bebidas, Hortifrúti, Mercearia, Carnes, Limpeza). Sem andar pra trás no mercado!
+              </p>
             </div>
-            <h3 className="text-base font-bold text-neutral-950 mb-2 flex items-center gap-1.5">
-              <span>Rota por Corredores</span>
-              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#84E000]/20 text-[#386000] uppercase font-bold">Novo</span>
-            </h3>
-            <p className="text-xs text-neutral-500 leading-relaxed">
-              Itens organizados na sequência física de compras (Bebidas, Hortifrúti, Mercearia/Trigo, Carnes e Limpeza). Sem andar pra trás no mercado!
-            </p>
+
+            {/* Micro-UI: Sequência de Corredores */}
+            <div className="mt-4 pt-3 border-t border-black/[0.04]">
+              <div className="p-2.5 rounded-xl bg-[#84E000]/10 border border-[#84E000]/25">
+                <div className="flex items-center justify-between text-[10px] font-mono mb-1.5">
+                  <span className="text-[#386000] font-bold flex items-center gap-1">
+                    <MapPin size={10} className="text-[#497D00]" /> Sequência Física
+                  </span>
+                  <span className="text-[9px] text-[#497D00] font-bold">0 voltas</span>
+                </div>
+                <div className="flex items-center gap-1 text-[9px] font-mono">
+                  <span className="px-1.5 py-0.5 rounded bg-white font-bold text-neutral-800 shadow-2xs border border-black/5">1.Bebidas</span>
+                  <span className="text-neutral-400">›</span>
+                  <span className="px-1.5 py-0.5 rounded bg-white font-bold text-neutral-800 shadow-2xs border border-black/5">4.Grãos</span>
+                  <span className="text-neutral-400">›</span>
+                  <span className="px-1.5 py-0.5 rounded bg-white font-bold text-neutral-800 shadow-2xs border border-black/5">9.Limpeza</span>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="bg-white hairline-border p-6 rounded-[24px] shadow-card">
-            <div className="w-10 h-10 rounded-2xl bg-neutral-950 text-[#84E000] flex items-center justify-center mb-4 font-mono font-bold">
-              04
+          {/* Passo 04 */}
+          <div className="group bg-white hairline-border p-5 sm:p-6 rounded-[28px] shadow-card hover:shadow-floating transition-all duration-300 flex flex-col justify-between relative overflow-hidden">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-10 h-10 rounded-2xl bg-neutral-950 text-[#84E000] flex items-center justify-center font-mono font-bold text-xs shadow-xs group-hover:scale-105 transition">
+                  04
+                </div>
+                <div className="w-9 h-9 rounded-2xl bg-neutral-100 flex items-center justify-center text-neutral-600 group-hover:bg-[#84E000]/15 group-hover:text-neutral-950 transition">
+                  <Share2 size={16} />
+                </div>
+              </div>
+              <span className="text-[10px] font-mono uppercase text-[#497D00] font-bold block mb-1">
+                COMPARTILHAMENTO
+              </span>
+              <h3 className="text-base font-bold text-neutral-950 mb-2">
+                Sincronia com a Família
+              </h3>
+              <p className="text-xs text-neutral-500 leading-relaxed">
+                Compartilhe a lista organizada no WhatsApp. As pessoas da casa acompanham e marcam itens da mesma compra em tempo real.
+              </p>
             </div>
-            <h3 className="text-base font-bold text-neutral-950 mb-2">
-              Sincronia com a Família
-            </h3>
-            <p className="text-xs text-neutral-500 leading-relaxed">
-              Compartilhe a lista organizada por corredores no WhatsApp. Os dois acompanham e marcam itens da mesma casa em tempo real.
-            </p>
+
+            {/* Micro-UI: WhatsApp Sync */}
+            <div className="mt-4 pt-3 border-t border-black/[0.04]">
+              <div className="p-2.5 rounded-xl bg-neutral-50 border border-black/[0.04] flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-5 h-5 rounded-full bg-[#25D366] text-white flex items-center justify-center shrink-0">
+                    <Share2 size={10} />
+                  </div>
+                  <span className="text-[10px] font-bold text-neutral-800">WhatsApp</span>
+                </div>
+                <span className="text-[9px] font-mono text-[#128C7E] font-bold bg-[#25D366]/15 px-1.5 py-0.5 rounded flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#25D366] animate-pulse" /> Sincronizado
+                </span>
+              </div>
+            </div>
           </div>
+
         </div>
       </section>
 
