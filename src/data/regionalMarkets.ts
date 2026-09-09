@@ -15,12 +15,12 @@ export const REGIONAL_MARKETS_BY_STATE: Record<string, RegionalMarketRule['marke
   PR: [
     { id: 'circuito_pr', name: 'Circuito Atacadista', color: '#0B0E11', priceFactor: 0.88, hasClub: false },
     { id: 'max_pr', name: 'Max Atacadista', color: '#F57C00', priceFactor: 0.91, hasClub: false },
-    { id: 'rioverde_pr', name: 'Supermercados Rio Verde', color: '#007A33', priceFactor: 0.92, hasClub: false },
     { id: 'atacadao_pr', name: 'Atacadão', color: '#E65100', priceFactor: 0.92, hasClub: false },
     { id: 'assai_pr', name: 'Assaí Atacadista', color: '#005CA9', priceFactor: 0.92, hasClub: true },
-    { id: 'condor', name: 'Condor Hipermercado', color: '#D32F2F', priceFactor: 0.95, hasClub: true },
-    { id: 'muffato', name: 'Super Muffato', color: '#1565C0', priceFactor: 0.97, hasClub: true },
-    { id: 'jacomar_pr', name: 'Supermercado Jacomar', color: '#E53935', priceFactor: 0.97, hasClub: false },
+    { id: 'rioverde_pr', name: 'Supermercados Rio Verde', color: '#007A33', priceFactor: 0.96, hasClub: false },
+    { id: 'condor', name: 'Condor Hipermercado', color: '#D32F2F', priceFactor: 0.98, hasClub: true },
+    { id: 'jacomar_pr', name: 'Supermercado Jacomar', color: '#E53935', priceFactor: 0.99, hasClub: false },
+    { id: 'muffato', name: 'Super Muffato', color: '#1565C0', priceFactor: 1.05, hasClub: true },
     { id: 'festval', name: 'Festval', color: '#2E7D32', priceFactor: 1.15, hasClub: true },
   ],
   SP: [

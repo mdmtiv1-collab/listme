@@ -25,6 +25,8 @@ export interface MarketComparison {
   savings: number;
   clubDiscounts: number;
   isBestValue: boolean;
+  distance?: string;
+  marketType?: 'atacadista' | 'supermercado';
 }
 
 export interface ChatMessage {

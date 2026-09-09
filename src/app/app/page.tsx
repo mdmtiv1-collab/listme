@@ -129,6 +129,7 @@ export default function AppPage() {
   const [userEmail, setUserEmail] = useState('');
   const [userPhone, setUserPhone] = useState('');
   const [city, setCity] = useState('');
+  const [neighborhood, setNeighborhood] = useState('');
   const [stateCode, setStateCode] = useState('PR');
   const [gpsLocation, setGpsLocation] = useState<GpsLocation | null>(null);
   const [isDetectingGps, setIsDetectingGps] = useState(false);
@@ -328,6 +329,7 @@ export default function AppPage() {
         setUserEmail(parsed.email || parsedAccount?.email || '');
         setUserPhone(parsed.phone || parsedAccount?.phone || '');
         setCity(parsed.city || parsedAccount?.city || 'Colombo');
+        setNeighborhood(parsed.neighborhood || '');
         setStateCode(parsed.state || parsedAccount?.state || 'PR');
         const regional = getMarketsForLocation(parsed.state || parsedAccount?.state || 'PR');
         
@@ -711,7 +713,7 @@ export default function AppPage() {
     // Identificar localização em tempo real (GPS ativo ou Perfil)
     let currentCity = gpsLocation?.city || city || 'Colombo';
     let currentState = gpsLocation?.state || stateCode || 'PR';
-    let currentNeighborhood = gpsLocation?.neighborhood || '';
+    let currentNeighborhood = gpsLocation?.neighborhood || neighborhood || '';
     let currentLat = gpsLocation?.latitude || null;
     let currentLng = gpsLocation?.longitude || null;
 
@@ -787,17 +789,22 @@ export default function AppPage() {
         if (Array.isArray(data.items) && data.items.length > 0) {
           let newMarkets: MarketComparison[] = [];
           if (data.rankedMarkets && Array.isArray(data.rankedMarkets) && data.rankedMarkets.length > 0) {
-            newMarkets = data.rankedMarkets.map((rm: any, idx: number) => ({
-              marketId: rm.marketId || `m-${idx}`,
-              marketName: rm.marketName || rm.name,
-              logoColor: idx === 0 ? '#0B0E11' : idx === 1 ? '#F57C00' : '#007A33',
-              coveredItems: rm.coveredItems || data.items.length,
-              totalItems: rm.totalItems || data.items.length,
-              totalPrice: Number(rm.totalPrice || (idx === 0 ? winnerTotal : winnerTotal + savingsVsSecond)),
-              savings: Number(rm.savings || (idx === 0 ? savingsVsSecond : 0)),
-              isBestValue: idx === 0,
-              clubDiscounts: 0,
-            }));
+            newMarkets = data.rankedMarkets.map((rm: any, idx: number) => {
+              const isAtacado = rm.marketType === 'atacadista' || /atacad|circuito|assai|fort|kompr|stok|rold/i.test(rm.marketName || rm.name || '');
+              return {
+                marketId: rm.marketId || `m-${idx}`,
+                marketName: rm.marketName || rm.name,
+                logoColor: idx === 0 ? '#0B0E11' : idx === 1 ? '#F57C00' : idx === 2 ? '#E65100' : idx === 3 ? '#007A33' : '#1565C0',
+                coveredItems: rm.coveredItems || data.items.length,
+                totalItems: rm.totalItems || data.items.length,
+                totalPrice: Number(rm.totalPrice || (idx === 0 ? winnerTotal : winnerTotal + savingsVsSecond)),
+                savings: Number(rm.savings || (idx === 0 ? savingsVsSecond : 0)),
+                isBestValue: idx === 0,
+                clubDiscounts: 0,
+                distance: rm.distance || '',
+                marketType: (isAtacado ? 'atacadista' : 'supermercado') as 'atacadista' | 'supermercado',
+              };
+            });
           } else if (winnerTotal > 0) {
             newMarkets = [
               {
@@ -810,6 +817,8 @@ export default function AppPage() {
                 savings: savingsVsSecond,
                 isBestValue: true,
                 clubDiscounts: 0,
+                distance: data.winner?.distance || '2.8 km',
+                marketType: (/atacad|circuito|assai|fort|kompr|stok/i.test(winnerName) ? 'atacadista' : 'supermercado') as 'atacadista' | 'supermercado',
               },
               ...(data.runnerUp ? [{
                 marketId: `runner-${Date.now()}`,
@@ -821,6 +830,8 @@ export default function AppPage() {
                 savings: 0,
                 isBestValue: false,
                 clubDiscounts: 0,
+                distance: data.runnerUp.distance || '3.2 km',
+                marketType: (/atacad|circuito|assai|fort|kompr|stok/i.test(data.runnerUp.name || '') ? 'atacadista' : 'supermercado') as 'atacadista' | 'supermercado',
               }] : [])
             ];
           }
@@ -2310,11 +2321,27 @@ export default function AppPage() {
                           {m.marketName[0]}
                         </div>
                         <div>
-                          {m.isBestValue && items.length > 0 && (
-                            <span className="text-[9px] font-mono uppercase tracking-wider text-neutral-950 bg-[#84E000] px-2 py-0.5 rounded font-bold inline-block mb-1">
-                              ★ MENOR CUSTO TOTAL
-                            </span>
-                          )}
+                          <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                            {m.isBestValue && items.length > 0 && (
+                              <span className="text-[9px] font-mono uppercase tracking-wider text-neutral-950 bg-[#84E000] px-2 py-0.5 rounded font-bold inline-block">
+                                ★ MENOR CUSTO TOTAL
+                              </span>
+                            )}
+                            {m.marketType && (
+                              <span className={`text-[9px] font-mono uppercase px-1.5 py-0.5 rounded font-bold ${
+                                m.marketType === 'atacadista'
+                                  ? 'bg-neutral-900 text-[#84E000]'
+                                  : 'bg-neutral-100 text-neutral-600'
+                              }`}>
+                                {m.marketType === 'atacadista' ? 'Atacarejo' : 'Supermercado'}
+                              </span>
+                            )}
+                            {m.distance && (
+                              <span className="text-[10px] font-mono text-neutral-500 font-medium">
+                                · {m.distance}
+                              </span>
+                            )}
+                          </div>
                           <h3 className="text-xs sm:text-sm font-bold text-neutral-900">
                             {m.marketName}
                           </h3>
@@ -2415,21 +2442,31 @@ export default function AppPage() {
                         </>
                       ) : (
                         <>
-                          Região: <strong className="text-neutral-900 font-semibold">{city}, {stateCode}</strong> (Perfil)
+                          Região: <strong className="text-neutral-900 font-semibold">{city || 'Colombo'}{neighborhood ? ` (${neighborhood})` : ''} • {stateCode}</strong>
                         </>
                       )}
                     </span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => detectCurrentLocation(true)}
-                    disabled={isDetectingGps}
-                    className="text-[10px] text-[#497D00] hover:text-[#3A6400] font-bold flex items-center gap-1 shrink-0 ml-2 transition"
-                    title="Atualizar GPS"
-                  >
-                    <RotateCcw size={9} className={isDetectingGps ? 'animate-spin' : ''} />
-                    {gpsLocation?.isGpsActive ? 'Atualizar' : 'Ativar GPS'}
-                  </button>
+                  <div className="flex items-center gap-2 shrink-0 ml-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsProfileModalOpen(true)}
+                      className="text-[10px] text-neutral-500 hover:text-neutral-900 font-medium transition"
+                      title="Editar cidade e bairro"
+                    >
+                      Editar Bairro
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => detectCurrentLocation(true)}
+                      disabled={isDetectingGps}
+                      className="text-[10px] text-[#497D00] hover:text-[#3A6400] font-bold flex items-center gap-1 transition"
+                      title="Atualizar GPS"
+                    >
+                      <RotateCcw size={9} className={isDetectingGps ? 'animate-spin' : ''} />
+                      {gpsLocation?.isGpsActive ? 'Atualizar' : 'Ativar GPS'}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="bg-white/95 backdrop-blur-xl hairline-border rounded-full p-1 pl-2.5 shadow-floating flex items-center gap-2 border border-black/[0.08]">
@@ -2626,6 +2663,19 @@ export default function AppPage() {
                   />
                 </div>
 
+                <div>
+                  <label className="text-[10px] font-mono uppercase text-neutral-400 block mb-1">
+                    Bairro / Região
+                  </label>
+                  <input
+                    type="text"
+                    value={neighborhood}
+                    onChange={(e) => setNeighborhood(e.target.value)}
+                    placeholder="Ex: Maracanã, Roça Grande, Centro, Batel..."
+                    className="w-full px-3.5 py-2.5 bg-neutral-50 hairline-border rounded-xl text-xs text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#84E000]"
+                  />
+                </div>
+
                 <div className="p-3 bg-[#F4FCE3] rounded-xl text-xs text-[#2A4800] leading-relaxed border border-[#D9F99D]">
                   <strong className="block text-[10px] font-mono uppercase text-[#497D00] font-bold">Redes Ativas</strong>
                   {markets.map(m => m.marketName).join(', ')}
@@ -2681,7 +2731,7 @@ export default function AppPage() {
               <div className="flex flex-col gap-2">
                 <button
                   onClick={() => {
-                    const currentProfile = { houseName, userName, city, state: stateCode };
+                    const currentProfile = { houseName, userName, city, neighborhood, state: stateCode };
                     localStorage.setItem('listme_profile', JSON.stringify(currentProfile));
                     setIsProfileModalOpen(false);
                     showToast('Preferências atualizadas!');
