@@ -618,9 +618,13 @@ export default function LandingPage() {
               </p>
             </div>
             <div className="flex items-center gap-3 pt-3 border-t border-black/[0.04]">
-              <div className="w-9 h-9 rounded-full bg-neutral-950 text-[#84E000] font-bold text-xs flex items-center justify-center font-mono shrink-0">
-                CV
-              </div>
+              <Image
+                src="/testimonials/camila.jpg"
+                alt="Camila Vasconcelos"
+                width={48}
+                height={48}
+                className="w-10 h-10 rounded-full object-cover border border-black/10 shadow-xs shrink-0"
+              />
               <div>
                 <strong className="text-xs font-bold text-neutral-900 block">Camila Vasconcelos</strong>
                 <span className="text-[10px] text-neutral-400">Mãe de 2 filhos · São Paulo, SP</span>
@@ -641,9 +645,13 @@ export default function LandingPage() {
               </p>
             </div>
             <div className="flex items-center gap-3 pt-3 border-t border-black/[0.04]">
-              <div className="w-9 h-9 rounded-full bg-[#84E000] text-neutral-950 font-bold text-xs flex items-center justify-center font-mono shrink-0">
-                RM
-              </div>
+              <Image
+                src="/testimonials/rodrigo-leticia.jpg"
+                alt="Rodrigo & Letícia"
+                width={48}
+                height={48}
+                className="w-10 h-10 rounded-full object-cover border border-black/10 shadow-xs shrink-0"
+              />
               <div>
                 <strong className="text-xs font-bold text-neutral-900 block">Rodrigo & Letícia</strong>
                 <span className="text-[10px] text-neutral-400">Plano Família · Curitiba, PR</span>
@@ -664,9 +672,13 @@ export default function LandingPage() {
               </p>
             </div>
             <div className="flex items-center gap-3 pt-3 border-t border-black/[0.04]">
-              <div className="w-9 h-9 rounded-full bg-neutral-950 text-white font-bold text-xs flex items-center justify-center font-mono shrink-0">
-                TG
-              </div>
+              <Image
+                src="/testimonials/thiago.jpg"
+                alt="Thiago Guimarães"
+                width={48}
+                height={48}
+                className="w-10 h-10 rounded-full object-cover border border-black/10 shadow-xs shrink-0"
+              />
               <div>
                 <strong className="text-xs font-bold text-neutral-900 block">Thiago Guimarães</strong>
                 <span className="text-[10px] text-neutral-400">Arquiteto · Belo Horizonte, MG</span>
