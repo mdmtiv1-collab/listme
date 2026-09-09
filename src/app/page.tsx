@@ -1245,15 +1245,15 @@ export default function LandingPage() {
 
       {/* Sticky Bottom Bar Flutuante para Mobile (Garante Conversão Máxima no Smartphone) */}
       <div className="sm:hidden fixed bottom-0 left-0 right-0 p-3 bg-neutral-950/95 backdrop-blur-xl border-t border-white/10 z-40 flex items-center justify-between gap-3 shadow-[0_-10px_25px_rgba(0,0,0,0.4)]">
-        <div className="min-w-0">
-          <div className="flex items-center gap-1 text-[11px] font-bold text-white leading-tight">
-            <span>A partir de</span>
-            <span className="text-[#84E000] font-mono">R$ 10,82/mês</span>
+        <a href="#precos" className="min-w-0 block">
+          <div className="flex items-center gap-1.5 text-[11px] font-bold text-white leading-tight">
+            <span>Plano Mensal:</span>
+            <span className="text-[#84E000] font-mono">R$ 0,99 por dia</span>
           </div>
           <span className="text-[9px] text-neutral-400 block font-mono truncate">
             7 dias de garantia incondicional
           </span>
-        </div>
+        </a>
         <a
           href="#precos"
           className="px-4 py-2 bg-[#84E000] hover:bg-[#92F200] text-neutral-950 font-bold rounded-full text-xs shadow-md transition shrink-0 flex items-center gap-1"
