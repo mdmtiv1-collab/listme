@@ -159,6 +159,8 @@ export default function AppPage() {
   const [listViewMode, setListViewMode] = useState<'aisles' | 'flat'>('aisles');
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const mainScrollRef = useRef<HTMLElement | null>(null);
+  const prevMessagesCountRef = useRef(messages.length);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -284,11 +286,36 @@ export default function AppPage() {
     });
   };
 
-  // Auto-scroll chat to bottom
+  // Sempre que o usuário trocar de página/aba, posicionar imediatamente no topo
   useEffect(() => {
-    if (activeTab === 'chat') {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (mainScrollRef.current) {
+      mainScrollRef.current.scrollTop = 0;
     }
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }
+    const rafId = requestAnimationFrame(() => {
+      if (mainScrollRef.current) {
+        mainScrollRef.current.scrollTop = 0;
+      }
+      if (typeof window !== 'undefined') {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      }
+    });
+    return () => cancelAnimationFrame(rafId);
+  }, [activeTab]);
+
+  // Auto-scroll da conversa APENAS quando uma NOVA mensagem for adicionada (nunca ao trocar de aba)
+  useEffect(() => {
+    if (activeTab === 'chat' && messages.length > prevMessagesCountRef.current) {
+      if (mainScrollRef.current) {
+        mainScrollRef.current.scrollTo({
+          top: mainScrollRef.current.scrollHeight,
+          behavior: 'smooth',
+        });
+      }
+    }
+    prevMessagesCountRef.current = messages.length;
   }, [messages, activeTab]);
 
   // Load profile and setup regional markets on mount
@@ -1195,7 +1222,10 @@ export default function AppPage() {
         )}
 
         {/* 2. Área de Conteúdo Rolável com Espaçamentos Refinados */}
-        <main className={`flex-1 overflow-y-auto px-5 sm:px-6 pt-3.5 ${activeTab === 'chat' ? 'pb-28' : 'pb-24'}`}>
+        <main
+          ref={mainScrollRef}
+          className={`flex-1 overflow-y-auto px-5 sm:px-6 pt-3.5 ${activeTab === 'chat' ? 'pb-28' : 'pb-24'}`}
+        >
 
           {/* ========================================= */}
           {/* TAB 1: DASHBOARD INICIAL (BENTO LUXURY) */}
