@@ -394,17 +394,23 @@ function cleanFillerPhrases(rawText: string): string {
     }
   }
 
-  // Descarta frases genéricas de preenchimento (ex: "e mais algumas coisas", "mais uns itens", "e tudo isso")
-  const fillerPhrases = [
-    /\b(?:e\s+)?mais\s+alguma(?:s)?\s+coisa(?:s)?\b/gi,
-    /\b(?:e\s+)?alguma(?:s)?\s+outra(?:s)?\s+coisa(?:s)?\b/gi,
-    /\b(?:e\s+)?mais\s+uns?\s+(?:itens|coisas|produtos|negócios|negocios)\b/gi,
-    /\b(?:e\s+)?o\s+que\s+mais\s+tiver\b/gi,
-    /\b(?:e\s+)?por\s+enquanto\s+(?:é\s+)?só\b/gi,
-    /\b(?:e\s+)?(?:tudo\s+isso|tudo\s+mais|isso\s+tudo|e\s+tudo|e\s+tal|e\s+etc)\b/gi,
+  // Descarta frases genéricas de preenchimento (ex: "não sei o quê", "sei lá", "e mais algumas coisas", "e tudo isso")
+  const boundaryStart = '(?:^|[^a-zA-Z0-9áéíóúãõçâêîôûÁÉÍÓÚÃÕÇÂÊÎÔÛ])';
+  const boundaryEnd = '(?=$|[^a-zA-Z0-9áéíóúãõçâêîôûÁÉÍÓÚÃÕÇÂÊÎÔÛ])';
+  const fillerTerms = [
+    '(?:e\\s+)?(?:n[ãa]o|nao)\\s+sei\\s+(?:o\\s+que\\s+mais|o\\s+que\\s+l[áa]|mais\\s+o\\s+qu[êe]|o\\s+qu[êe]|o\\s+que|mais)',
+    '(?:e\\s+)?sei\\s+l[áa](?:\\s+o\\s+que\\s+mais|\\s+o\\s+qu[êe]|\\s+o\\s+que)?',
+    '(?:e\\s+)?(?:coisas?\\s+e\\s+tal|coisas?\\s+do\\s+tipo|essas\\s+coisas|outras\\s+coisas|por\\s+a[íi]|e\\s+afins)',
+    '(?:e\\s+)?mais\\s+alguma(?:s)?\s+coisa(?:s)?',
+    '(?:e\\s+)?alguma(?:s)?\s+outra(?:s)?\s+coisa(?:s)?',
+    '(?:e\\s+)?mais\\s+uns?\s+(?:itens|coisas|produtos|negócios|negocios)',
+    '(?:e\\s+)?o\\s+que\\s+mais\\s+tiver',
+    '(?:e\\s+)?por\\s+enquanto\\s+(?:é\\s+)?só',
+    '(?:e\\s+)?(?:tudo\\s+isso|tudo\\s+mais|isso\\s+tudo|e\\s+tudo|e\\s+tal|e\\s+etc)',
   ];
-  for (const pattern of fillerPhrases) {
-    text = text.replace(pattern, ' , ');
+  for (const term of fillerTerms) {
+    const regex = new RegExp(`${boundaryStart}${term}${boundaryEnd}`, 'gi');
+    text = text.replace(regex, ' , ');
   }
 
   // Pausas de fala e conectores convertidos em separadores
@@ -572,8 +578,14 @@ function isValidGroceryItemName(phrase: string): boolean {
     'por enquanto', 'so isso', 'só isso', 'fechou', 'valeu', 'obrigado',
     'selecionado', 'unidades', 'unidade', 'bandeja', 'cartela', 'estojo',
     'pacote', 'pacotes', 'caixa', 'caixas', 'litro', 'litros', 'quilo', 'quilos',
+    'não sei o que', 'nao sei o que', 'não sei o quê', 'nao sei o que mais', 'não sei o que mais',
+    'sei lá o que', 'sei la o que', 'sei lá', 'sei la', 'coisa e tal', 'por aí', 'por ai',
   ]);
   if (invalidPhrases.has(trimmed)) return false;
+
+  if (/(?:n[ãa]o|nao)\s+sei|sei\s+l[áa]|coisa\s+e\s+tal|por\s+a[íi]|essas?\s+coisas?|o\s+que\s+mais/i.test(trimmed)) {
+    return false;
+  }
 
   if (/^(?:com|de|em|para|por|e|a|o|um|uma|uns|umas|\d+|unidades?|un|kg|k|g|pct|cx|l|dz)+\s*$/i.test(trimmed)) {
     return false;

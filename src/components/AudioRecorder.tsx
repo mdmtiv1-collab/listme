@@ -157,50 +157,48 @@ export default function AudioRecorder({ onAudioCaptured, onCancel }: AudioRecord
   };
 
   return (
-    <div className="flex flex-col gap-1.5 bg-paper-50 hairline-border p-2 rounded-2xl shadow-elevated">
-      
+    <div className="flex flex-col gap-2 bg-[#14181D] border border-white/10 p-3 rounded-2xl shadow-xl">
       {/* Real-time live transcript bar */}
-      <div className="px-2 pt-1 flex items-center justify-between">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0" />
-          <p className="text-[11px] text-ink font-medium truncate">
+      <div className="px-1 flex items-center justify-between">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="w-2 h-2 rounded-full bg-[#84E000] animate-pulse shrink-0" />
+          <p className="text-xs text-white font-medium truncate">
             {transcript ? (
-              <span>&ldquo;{transcript}&rdquo;</span>
+              <span className="text-[#84E000] font-semibold">&ldquo;{transcript}&rdquo;</span>
             ) : errorMessage ? (
-              <span className="text-amber-700">{errorMessage}</span>
+              <span className="text-amber-400">{errorMessage}</span>
             ) : (
-              <span className="text-ink-muted">Ouvindo... Diga o que precisa comprar</span>
+              <span className="text-neutral-400">Ouvindo... Diga os itens da sua compra</span>
             )}
           </p>
         </div>
-        <span className="font-mono text-xs font-bold text-[#497D00] shrink-0 ml-2">
+        <span className="font-mono text-xs font-bold text-[#84E000] shrink-0 ml-2">
           {formatTime(seconds)}
         </span>
       </div>
 
       {/* Wave Visualizer and Controls */}
-      <div className="flex items-center justify-between gap-2 pt-1">
-        
+      <div className="flex items-center justify-between gap-3 pt-1">
         {/* Real Dynamic Soundwave */}
-        <div className="flex items-center gap-1 h-6 px-1 flex-1 overflow-hidden">
+        <div className="flex items-center gap-1 h-7 px-1 flex-1 overflow-hidden">
           {audioVolumes.map((height, i) => (
             <span
               key={i}
               style={{ height: `${height}px` }}
               className={`w-1 rounded-full transition-all duration-75 ${
-                isPaused ? 'bg-neutral-300' : 'bg-[#84E000]'
+                isPaused ? 'bg-neutral-600' : 'bg-[#84E000] shadow-[0_0_8px_#84e00088]'
               }`}
             />
           ))}
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
           <button
             onClick={onCancel}
             type="button"
             title="Descartar áudio"
-            className="p-1.5 text-neutral-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition"
+            className="p-2 text-neutral-400 hover:text-red-400 hover:bg-white/5 rounded-xl transition"
           >
             <Trash2 size={16} />
           </button>
@@ -209,7 +207,7 @@ export default function AudioRecorder({ onAudioCaptured, onCancel }: AudioRecord
             onClick={() => setIsPaused(!isPaused)}
             type="button"
             title={isPaused ? 'Continuar' : 'Pausar'}
-            className="p-1.5 text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 rounded-xl transition"
+            className="p-2 text-neutral-300 hover:text-white hover:bg-white/5 rounded-xl transition"
           >
             {isPaused ? <Play size={16} /> : <Pause size={16} />}
           </button>
@@ -217,14 +215,13 @@ export default function AudioRecorder({ onAudioCaptured, onCancel }: AudioRecord
           <button
             onClick={handleSend}
             type="button"
-            title="Enviar e cotar produtos"
-            className="px-3 py-1.5 bg-[#84E000] hover:bg-[#92F200] text-neutral-950 rounded-xl text-xs font-bold shadow-xs transition flex items-center gap-1.5 duration-200"
+            title="Adicionar à lista"
+            className="px-3.5 py-2 bg-[#84E000] hover:bg-[#92F200] text-neutral-950 rounded-xl text-xs font-bold shadow-lg shadow-[#84e000]/20 transition flex items-center gap-1.5 duration-200"
           >
             <Send size={14} />
-            <span>Enviar</span>
+            <span>Adicionar</span>
           </button>
         </div>
-
       </div>
     </div>
   );
