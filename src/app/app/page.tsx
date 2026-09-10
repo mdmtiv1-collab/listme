@@ -1,1682 +1,2955 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
-  Mic,
+  LayoutDashboard,
+  MessageSquare,
+  CheckSquare,
+  TrendingUp,
+  Tag,
   Camera,
+  Mic,
+  Send,
   Plus,
   Minus,
   Trash2,
-  Check,
-  ChevronRight,
-  ChevronDown,
-  ChevronUp,
-  MapPin,
-  Navigation,
   Share2,
   Sparkles,
+  ChevronRight,
   User,
-  Search,
-  Store,
-  ArrowUpRight,
-  CheckCircle2,
-  TrendingUp,
-  Tag,
-  Home,
-  CheckSquare,
-  X,
-  Keyboard,
-  Settings,
-  ExternalLink,
-  ShieldCheck,
-  Clock,
   ShoppingBag,
-  Volume2,
-  AlertCircle,
-  RefreshCw,
+  Store,
+  Clock,
+  ArrowUpRight,
+  Check,
+  RotateCcw,
+  MapPin,
+  Navigation,
+  Flame,
+  ShieldCheck,
+  FileText,
+  CheckCheck,
+  CheckCircle2,
+  Receipt,
   LogOut,
-  SlidersHorizontal,
-  DollarSign
+  X
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
-import { ListItem, MarketComparison, ChatMessage, ExpenseRecord } from '@/types';
+import { ListItem, MarketComparison, ChatMessage, ExpenseRecord, ActiveTab } from '@/types';
 import { getMarketsForLocation } from '@/data/regionalMarkets';
 import { extractGroceryItems } from '@/utils/groceryParser';
 import { groupItemsByAisles, formatListByAisleForWhatsApp } from '@/utils/supermarketAisles';
+import { getDailyQuote, DailyQuote, DAILY_QUOTES } from '@/data/dailyQuotes';
 import AudioRecorder from '@/components/AudioRecorder';
 import PhotoUploadModal from '@/components/PhotoUploadModal';
+import OnboardingModal from '@/components/OnboardingModal';
 import InstallTutorialModal from '@/components/InstallTutorialModal';
-import MarketLogo from '@/components/MarketLogo';
+import AuthRegistrationScreen from '@/components/AuthRegistrationScreen';
 
-export type AppTab = 'home' | 'lists' | 'prices' | 'profile';
+function FormattedChatMessage({ text }: { text: string }) {
+  if (!text) return null;
 
-const CATEGORY_IMAGES: Record<string, string> = {
-  'Hortifrúti': '/categories/hortifruti.jpg',
-  'Hortifruti': '/categories/hortifruti.jpg',
-  'Mercearia': '/categories/mercearia.jpg',
-  'Açougue': '/categories/carnes.jpg',
-  'Carnes': '/categories/carnes.jpg',
-  'Laticínios': '/categories/frios.jpg',
-  'Laticínios & Frios': '/categories/frios.jpg',
-  'Frios': '/categories/frios.jpg',
-  'Bebidas': '/categories/bebidas.jpg',
-  'Padaria': '/categories/padaria.jpg',
-  'Limpeza': '/categories/limpeza.jpg',
-  'Higiene': '/categories/higiene.jpg',
-  'Outros': '/categories/mercearia.jpg',
-};
+  // Clean out citations, web search tokens and raw markdown links
+  const cleaned = text
+    .replace(/\(\[.*?\]\(https?:\/\/[^\)]+\)\)/gi, '')
+    .replace(/\[.*?\]\(https?:\/\/[^\)]+\)/gi, '')
+    .replace(/【.*?】/gi, '')
+    .trim();
+
+  const lines = cleaned.split('\n');
+
+  const renderInlineBold = (str: string) => {
+    // Split by markdown bold (**text**)
+    const parts = str.split(/(\*\*.*?\*\*)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
+        return (
+          <strong key={i} className="font-bold text-neutral-950">
+            {part.slice(2, -2)}
+          </strong>
+        );
+      }
+      return <span key={i}>{part}</span>;
+    });
+  };
+
+  return (
+    <div className="space-y-2 text-neutral-800 text-xs sm:text-[13px] leading-relaxed">
+      {lines.map((line, idx) => {
+        const trimmed = line.trim();
+        if (!trimmed) {
+          return <div key={idx} className="h-1" />;
+        }
+
+        // Check if line is a bullet item (- or * or •)
+        if (trimmed.startsWith('- ') || trimmed.startsWith('* ') || trimmed.startsWith('• ')) {
+          const content = trimmed.replace(/^[-*•]\s+/, '');
+          return (
+            <div key={idx} className="flex items-start gap-2 pl-0.5 py-0.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#70BF00] mt-1.5 shrink-0 shadow-xs" />
+              <div className="flex-1 text-neutral-800">{renderInlineBold(content)}</div>
+            </div>
+          );
+        }
+
+        // Check if it's a section header line like **Veredito:** or **Comparativo...:** or **Economia:**
+        const isHeader = trimmed.startsWith('**') && (trimmed.includes(':**') || trimmed.endsWith('**'));
+
+        return (
+          <p key={idx} className={isHeader ? 'pt-1 font-normal text-neutral-900' : ''}>
+            {renderInlineBold(trimmed)}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
+export interface GpsLocation {
+  latitude: number;
+  longitude: number;
+  city: string;
+  state: string;
+  neighborhood?: string;
+  displayName?: string;
+  isGpsActive: boolean;
+  status: 'idle' | 'detecting' | 'active' | 'denied' | 'error';
+  lastUpdated?: number;
+}
 
 export default function AppPage() {
-  const [activeTab, setActiveTab] = useState<AppTab>('home');
+  const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
+  
+  // Auth & Profile state
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [houseName, setHouseName] = useState('');
+  const [userName, setUserName] = useState('');
+  const [userEmail, setUserEmail] = useState('');
+  const [userPhone, setUserPhone] = useState('');
+  const [city, setCity] = useState('');
+  const [neighborhood, setNeighborhood] = useState('');
+  const [stateCode, setStateCode] = useState('PR');
+  const [gpsLocation, setGpsLocation] = useState<GpsLocation | null>(null);
+  const [isDetectingGps, setIsDetectingGps] = useState(false);
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
+  const [dailyQuote, setDailyQuote] = useState<DailyQuote | null>(null);
+
+  // App data state — 100% ZERADO inicialmente
   const [items, setItems] = useState<ListItem[]>([]);
   const [markets, setMarkets] = useState<MarketComparison[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [expenses, setExpenses] = useState<ExpenseRecord[]>([]);
-  
-  // Location & User Profile
-  const [city, setCity] = useState('Colombo');
-  const [stateCode, setStateCode] = useState('PR');
-  const [neighborhood, setNeighborhood] = useState('Maracanã');
-  const [userName, setUserName] = useState('Filipe Nascimento');
-  const [houseName, setHouseName] = useState('Casa');
-  const [gpsLocation, setGpsLocation] = useState<{
-    latitude: number | null;
-    longitude: number | null;
-    city: string;
-    state: string;
-    neighborhood?: string;
-    isGpsActive: boolean;
-  }>({
-    latitude: -25.2917,
-    longitude: -49.2242,
-    city: 'Colombo',
-    state: 'PR',
-    neighborhood: 'Maracanã',
-    isGpsActive: true,
-  });
+  const [smartTip, setSmartTip] = useState<string | null>(null);
 
-  // UI States
+  // Input state
+  const [inputText, setInputText] = useState('');
   const [isRecordingAudio, setIsRecordingAudio] = useState(false);
   const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
-  const [isTextModalOpen, setIsTextModalOpen] = useState(false);
-  const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
-  const [isRecordExpenseModalOpen, setIsRecordExpenseModalOpen] = useState(false);
-  const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-  // Assistant & Search States
   const [isSearchingOffers, setIsSearchingOffers] = useState(false);
-  const [assistantFeedback, setAssistantFeedback] = useState<string | null>(null);
+  const [newExpenseMarket, setNewExpenseMarket] = useState('');
+  const [newExpenseValue, setNewExpenseValue] = useState('');
+  const [newExpenseNotes, setNewExpenseNotes] = useState('');
+  const [lastEstimatedTotal, setLastEstimatedTotal] = useState<number>(0);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [listSearchQuery, setListSearchQuery] = useState('');
-  const [priceSortMode, setPriceSortMode] = useState<'cheapest' | 'closest'>('cheapest');
-  const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
+  const [listViewMode, setListViewMode] = useState<'aisles' | 'flat'>('aisles');
 
-  // Input fields for modals
-  const [manualText, setManualText] = useState('');
-  const [newItemName, setNewItemName] = useState('');
-  const [newItemCategory, setNewItemCategory] = useState('Mercearia');
-  const [newItemQty, setNewItemQty] = useState(1);
-  const [newItemUnit, setNewItemUnit] = useState('un');
-  const [newItemPrice, setNewItemPrice] = useState('');
-
-  // Expense modal fields
-  const [expenseMarket, setExpenseMarket] = useState('Atacadão');
-  const [expenseTotal, setExpenseTotal] = useState('');
-  const [expenseSaved, setExpenseSaved] = useState('');
-
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-
-  // Switch tab with instant scroll to top
-  const switchTab = (tab: AppTab) => {
-    setActiveTab(tab);
-    if (typeof window !== 'undefined') {
-      window.scrollTo({ top: 0, behavior: 'instant' });
-    }
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTop = 0;
-    }
-  };
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const mainScrollRef = useRef<HTMLElement | null>(null);
+  const prevMessagesCountRef = useRef(messages.length);
+  const isAiQuotedRef = useRef(false);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3500);
+    setTimeout(() => setToastMessage(null), 3200);
   };
 
-  // 1. Load Initial State from localStorage or Defaults
+  // Detecção Automática de Localização em Tempo Real (GPS Dinâmico)
+  const detectCurrentLocation = async (userInitiated = false): Promise<GpsLocation | null> => {
+    if (typeof window === 'undefined' || !navigator.geolocation) {
+      if (userInitiated) showToast('Geolocalização não suportada neste dispositivo.');
+      return null;
+    }
+
+    setIsDetectingGps(true);
+
+    return new Promise((resolve) => {
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+
+          let detectedCity = city || 'Colombo';
+          let detectedState = stateCode || 'PR';
+          let detectedNeighborhood = '';
+          let detectedDisplayName = '';
+
+          // 1. Heurística local ultrarrápida para Grande Curitiba e RMC
+          if (lat >= -25.36 && lat <= -25.20 && lng >= -49.30 && lng <= -49.12) {
+            detectedCity = 'Colombo';
+          } else if (lat >= -25.56 && lat <= -25.37 && lng >= -49.38 && lng <= -49.18) {
+            detectedCity = 'Curitiba';
+          } else if (lat >= -25.65 && lat <= -25.50 && lng >= -49.25 && lng <= -49.08) {
+            detectedCity = 'São José dos Pinhais';
+          } else if (lat >= -25.48 && lat <= -25.40 && lng >= -49.20 && lng <= -49.10) {
+            detectedCity = 'Pinhais';
+          } else if (lat >= -25.68 && lat <= -25.56 && lng >= -49.42 && lng <= -49.30) {
+            detectedCity = 'Araucária';
+          }
+
+          // 2. Geocodificação reversa de alta precisão via Nominatim OpenStreetMap (com timeout de 3.5s)
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+            const res = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1`,
+              {
+                headers: { 'Accept-Language': 'pt-BR' },
+                signal: controller.signal,
+              }
+            );
+            clearTimeout(timeoutId);
+
+            if (res.ok) {
+              const data = await res.json();
+              const addr = data.address || {};
+              if (addr.city || addr.town || addr.municipality || addr.village) {
+                detectedCity = addr.city || addr.town || addr.municipality || addr.village;
+              }
+              if (addr.suburb || addr.neighbourhood || addr.city_district || addr.quarter) {
+                detectedNeighborhood = addr.suburb || addr.neighbourhood || addr.city_district || addr.quarter;
+              }
+              if (addr.state_code) {
+                detectedState = addr.state_code;
+              } else if (addr.state === 'Paraná') {
+                detectedState = 'PR';
+              }
+              detectedDisplayName = data.display_name || '';
+            }
+          } catch {
+            // Mantém valores da heurística local caso o Nominatim esteja offline ou com lentidão
+          }
+
+          const newGps: GpsLocation = {
+            latitude: lat,
+            longitude: lng,
+            city: detectedCity,
+            state: detectedState,
+            neighborhood: detectedNeighborhood,
+            displayName: detectedDisplayName,
+            isGpsActive: true,
+            status: 'active',
+            lastUpdated: Date.now(),
+          };
+
+          setGpsLocation(newGps);
+          setCity(detectedCity);
+          setStateCode(detectedState);
+          setIsDetectingGps(false);
+
+          try {
+            localStorage.setItem('listme_gps_location', JSON.stringify(newGps));
+          } catch {}
+
+          if (userInitiated) {
+            const label = detectedNeighborhood ? `${detectedCity} (${detectedNeighborhood})` : detectedCity;
+            showToast(`📍 GPS Ativo: ${label}`);
+          }
+
+          resolve(newGps);
+        },
+        (err) => {
+          setIsDetectingGps(false);
+          setGpsLocation((prev) =>
+            prev
+              ? { ...prev, isGpsActive: false, status: 'denied' }
+              : {
+                  latitude: 0,
+                  longitude: 0,
+                  city: city || 'Colombo',
+                  state: stateCode || 'PR',
+                  isGpsActive: false,
+                  status: 'denied',
+                }
+          );
+          if (userInitiated) {
+            showToast('Permissão de GPS necessária para atualizar localização.');
+          }
+          resolve(null);
+        },
+        { enableHighAccuracy: true, timeout: 6000, maximumAge: 30000 }
+      );
+    });
+  };
+
+  // Navegação estrita entre abas: força foco neutro e scroll no topo absoluto (0)
+  const switchTab = (newTab: ActiveTab) => {
+    if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+    setActiveTab(newTab);
+    if (mainScrollRef.current) {
+      mainScrollRef.current.scrollTop = 0;
+    }
+    if (typeof window !== 'undefined') {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    }
+  };
+
+  // Sempre que o usuário trocar de página/aba, posicionar estritamente no topo absoluto
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    const scrollToAbsoluteTop = () => {
+      if (mainScrollRef.current) {
+        mainScrollRef.current.scrollTop = 0;
+      }
+      if (typeof window !== 'undefined') {
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      }
+    };
 
-    try {
-      const savedItems = localStorage.getItem('listme_items');
-      if (savedItems) {
-        const parsed = JSON.parse(savedItems);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setItems(parsed);
+    scrollToAbsoluteTop();
+    const raf1 = requestAnimationFrame(scrollToAbsoluteTop);
+    const raf2 = requestAnimationFrame(() => requestAnimationFrame(scrollToAbsoluteTop));
+    const t1 = setTimeout(scrollToAbsoluteTop, 30);
+    const t2 = setTimeout(scrollToAbsoluteTop, 90);
+    const t3 = setTimeout(scrollToAbsoluteTop, 210); // Logo após a transição fade-in de 200ms
+
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
+  }, [activeTab]);
+
+  // Auto-scroll da conversa APENAS quando uma NOVA mensagem for adicionada (nunca ao trocar de aba)
+  useEffect(() => {
+    if (activeTab === 'chat' && messages.length > prevMessagesCountRef.current) {
+      if (mainScrollRef.current) {
+        mainScrollRef.current.scrollTo({
+          top: mainScrollRef.current.scrollHeight,
+          behavior: 'smooth',
+        });
+      }
+    }
+    prevMessagesCountRef.current = messages.length;
+  }, [messages, activeTab]);
+
+  // Load profile and setup regional markets on mount
+  useEffect(() => {
+    setDailyQuote(getDailyQuote());
+
+    // 1. Check user authentication session
+    const session = localStorage.getItem('listme_user_session');
+    const savedAccount = localStorage.getItem('listme_user_account');
+    const savedProfile = localStorage.getItem('listme_profile');
+
+    let parsedAccount: any = null;
+    if (savedAccount) {
+      try {
+        parsedAccount = JSON.parse(savedAccount);
+      } catch {}
+    }
+
+    if (session) {
+      try {
+        const parsedSession = JSON.parse(session);
+        if (parsedSession && parsedSession.isLoggedIn) {
+          setIsAuthenticated(true);
         } else {
-          loadDefaultItems();
+          setIsAuthenticated(false);
         }
-      } else {
-        loadDefaultItems();
+      } catch {
+        setIsAuthenticated(false);
       }
+    } else {
+      setIsAuthenticated(false);
+    }
 
-      const savedExpenses = localStorage.getItem('listme_expenses');
-      if (savedExpenses) {
+    if (savedProfile) {
+      try {
+        const parsed = JSON.parse(savedProfile);
+        setHouseName(parsed.houseName || 'Minha Casa');
+        setUserName(parsed.userName || parsedAccount?.name || '');
+        setUserEmail(parsed.email || parsedAccount?.email || '');
+        setUserPhone(parsed.phone || parsedAccount?.phone || '');
+        setCity(parsed.city || parsedAccount?.city || 'Colombo');
+        setNeighborhood(parsed.neighborhood || '');
+        setStateCode(parsed.state || parsedAccount?.state || 'PR');
+        const regional = getMarketsForLocation(parsed.state || parsedAccount?.state || 'PR');
+        
+        // Load custom markets if any
+        const savedCustomMarkets = localStorage.getItem('listme_custom_markets');
+        if (savedCustomMarkets) {
+          try {
+            const parsedCustom = JSON.parse(savedCustomMarkets);
+            setMarkets([...regional, ...parsedCustom]);
+          } catch {
+            setMarkets(regional);
+          }
+        } else {
+          setMarkets(regional);
+        }
+        
+        // Load saved messages from LocalStorage or initialize with welcome message
+        const savedMsgs = localStorage.getItem('listme_messages');
+        if (savedMsgs) {
+          try {
+            const parsedMsgs = JSON.parse(savedMsgs);
+            if (Array.isArray(parsedMsgs) && parsedMsgs.length > 0) {
+              setMessages(parsedMsgs);
+            } else {
+              setMessages([
+                {
+                  id: 'msg-welcome',
+                  role: 'assistant',
+                  text: `Olá, ${parsed.userName || parsedAccount?.name || 'você'}! Cotações ativas para ${parsed.city || 'Colombo'}, ${parsed.state || 'PR'}.\n\nO que precisa comprar? Dite por voz, envie foto ou digite abaixo.`,
+                  timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+                }
+              ]);
+            }
+          } catch {
+            setMessages([]);
+          }
+        } else {
+          setMessages([
+            {
+              id: 'msg-welcome',
+              role: 'assistant',
+              text: `Olá, ${parsed.userName || parsedAccount?.name || 'você'}! Cotações ativas para ${parsed.city || 'Colombo'}, ${parsed.state || 'PR'}.\n\nO que precisa comprar? Dite por voz, envie foto ou digite abaixo.`,
+              timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+            }
+          ]);
+        }
+      } catch {
+        setMarkets(getMarketsForLocation('PR'));
+      }
+    } else {
+      setMarkets(getMarketsForLocation('PR'));
+    }
+
+    const savedItems = localStorage.getItem('listme_items');
+    if (savedItems) {
+      try {
+        setItems(JSON.parse(savedItems));
+      } catch {
+        setItems([]);
+      }
+    }
+
+    const savedMarkets = localStorage.getItem('listme_markets');
+    if (savedMarkets) {
+      try {
+        const parsed = JSON.parse(savedMarkets);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setMarkets(parsed);
+        }
+      } catch {}
+    }
+
+    const savedSmartTip = localStorage.getItem('listme_smart_tip');
+    if (savedSmartTip) {
+      setSmartTip(savedSmartTip);
+    }
+
+    const savedExpenses = localStorage.getItem('listme_expenses');
+    if (savedExpenses) {
+      try {
         setExpenses(JSON.parse(savedExpenses));
-      } else {
-        setExpenses([
-          { id: '1', marketName: 'Atacadão', date: '12 de mai.', totalPaid: 284.90, itemsCount: 18, estimatedEconomy: 38.40 },
-          { id: '2', marketName: 'Carrefour', date: '05 de mai.', totalPaid: 323.30, itemsCount: 14, estimatedEconomy: 24.50 },
-          { id: '3', marketName: 'Assaí Atacadista', date: '28 de abr.', totalPaid: 295.10, itemsCount: 16, estimatedEconomy: 42.10 },
-          { id: '4', marketName: 'Max Atacadista', date: '21 de abr.', totalPaid: 240.80, itemsCount: 12, estimatedEconomy: 31.20 }
-        ]);
+      } catch {
+        setExpenses([]);
       }
+    }
 
-      const savedProfile = localStorage.getItem('listme_profile');
-      if (savedProfile) {
-        const p = JSON.parse(savedProfile);
-        if (p.userName) setUserName(p.userName);
-        if (p.city) setCity(p.city);
-        if (p.state) setStateCode(p.state);
-        if (p.neighborhood) setNeighborhood(p.neighborhood);
-      }
-    } catch (e) {
-      console.error('Error reading localStorage:', e);
-      loadDefaultItems();
+    // Recuperar localização GPS prévia do cache e buscar nova posição silenciosamente
+    const savedGps = localStorage.getItem('listme_gps_location');
+    if (savedGps) {
+      try {
+        const parsed = JSON.parse(savedGps);
+        setGpsLocation(parsed);
+        if (parsed.city) setCity(parsed.city);
+        if (parsed.state) setStateCode(parsed.state);
+      } catch {}
+    }
+
+    if (typeof window !== 'undefined' && navigator.geolocation) {
+      detectCurrentLocation(false);
     }
   }, []);
 
-  const loadDefaultItems = () => {
-    const defaults: ListItem[] = [
-      { id: '1', name: 'Arroz Branco 5kg', matchedItem: 'Arroz Branco Nobre Tipo 1 Tio João 5kg', basePrice: 25.90, quantity: 1, unit: 'pct', category: 'Mercearia', checked: false },
-      { id: '2', name: 'Feijão Carioca 1kg', matchedItem: 'Feijão Carioca Tipo 1 Kicaldo 1kg', basePrice: 7.89, quantity: 2, unit: 'pct', category: 'Mercearia', checked: false },
-      { id: '3', name: 'Café Tradicional 500g', matchedItem: 'Café Tradicional em Pó Pilão 500g', basePrice: 18.90, quantity: 1, unit: 'pct', category: 'Mercearia', checked: false },
-      { id: '4', name: 'Óleo de Soja 900ml', matchedItem: 'Óleo de Soja Refinado Soya 900ml', basePrice: 6.89, quantity: 2, unit: 'un', category: 'Mercearia', checked: true },
-      { id: '5', name: 'Azeite Extra Virgem 500ml', matchedItem: 'Azeite de Oliva Extra Virgem Gallo 500ml', basePrice: 34.90, quantity: 1, unit: 'un', category: 'Mercearia', checked: false },
-      { id: '6', name: 'Ovos (Bandeja 30 un)', matchedItem: 'Ovos Brancos Grandes Bandeja 30 un', basePrice: 18.90, quantity: 1, unit: 'bandeja', category: 'Hortifrúti', checked: false },
-      { id: '7', name: 'Banana Prata', matchedItem: 'Banana Prata Fresca 1kg', basePrice: 6.49, quantity: 2, unit: 'kg', category: 'Hortifrúti', checked: true },
-      { id: '8', name: 'Maçã Nacional', matchedItem: 'Maçã Gala Nacional Selecionada 1kg', basePrice: 8.90, quantity: 1, unit: 'kg', category: 'Hortifrúti', checked: false },
-      { id: '9', name: 'Batata Lavada', matchedItem: 'Batata Inglesa Lavada 1kg', basePrice: 5.99, quantity: 2, unit: 'kg', category: 'Hortifrúti', checked: false },
-      { id: '10', name: 'Tomate Longa Vida', matchedItem: 'Tomate Longa Vida Selecionado 1kg', basePrice: 7.49, quantity: 1, unit: 'kg', category: 'Hortifrúti', checked: false },
-      { id: '11', name: 'Patinho Bovino Moído', matchedItem: 'Patinho Bovino de Primeira Fresco 1kg', basePrice: 34.90, quantity: 1, unit: 'kg', category: 'Carnes', checked: false },
-      { id: '12', name: 'Peito de Frango', matchedItem: 'Filé de Peito de Frango Congelado 1kg', basePrice: 17.90, quantity: 2, unit: 'kg', category: 'Carnes', checked: false },
-      { id: '13', name: 'Sabão em Pó OMO 1.6kg', matchedItem: 'Sabão em Pó OMO Lavagem Perfeita 1.6kg', basePrice: 22.90, quantity: 1, unit: 'un', category: 'Limpeza', checked: false },
-      { id: '14', name: 'Detergente Ypê 500ml', matchedItem: 'Detergente Líquido Neutro Ypê 500ml', basePrice: 2.39, quantity: 3, unit: 'un', category: 'Limpeza', checked: true },
-      { id: '15', name: 'Amaciante Concentrado 1.5L', matchedItem: 'Amaciante Concentrado Comfort 1.5L', basePrice: 19.90, quantity: 1, unit: 'un', category: 'Limpeza', checked: false },
-      { id: '16', name: 'Papel Higiênico Folha Dupla 12 rolos', matchedItem: 'Papel Higiênico Neve Folha Dupla 12 un', basePrice: 21.90, quantity: 1, unit: 'pct', category: 'Higiene', checked: false },
-      { id: '17', name: 'Creme Dental Colgate 90g', matchedItem: 'Creme Dental Colgate Total 12 90g', basePrice: 5.49, quantity: 2, unit: 'un', category: 'Higiene', checked: false },
-      { id: '18', name: 'Sabonete Dove 90g', matchedItem: 'Sabonete em Barra Original Dove 90g', basePrice: 4.29, quantity: 4, unit: 'un', category: 'Higiene', checked: true }
-    ];
-    setItems(defaults);
-    localStorage.setItem('listme_items', JSON.stringify(defaults));
-  };
-
-  // 2. Dynamically Recalculate Markets whenever items or location change
+  // Save messages whenever they change
   useEffect(() => {
-    if (items.length === 0) return;
-
-    const baseListTotal = items.reduce((acc, it) => acc + (it.basePrice || 10) * (it.quantity || 1), 0);
-    const regional = getMarketsForLocation(stateCode);
-
-    // Factors: Atacadistas are ~12% to 15% cheaper, Supermercados are full price or +10%
-    const calculated: MarketComparison[] = regional.map((m, idx) => {
-      const isWholesale = /atacad|assai|circuito|fort|kompr|max/i.test(m.marketName);
-      const factor = m.priceFactor || (isWholesale ? 0.88 : 1.05);
-      const storeTotal = Number((baseListTotal * factor).toFixed(2));
-      return {
-        marketId: m.marketId,
-        marketName: m.marketName,
-        logoColor: m.logoColor || '#84E000',
-        coveredItems: items.length,
-        totalItems: items.length,
-        totalPrice: storeTotal,
-        savings: 0,
-        clubDiscounts: Number((storeTotal * 0.04).toFixed(2)),
-        isBestValue: false,
-        distance: m.distance || `${(2.2 + idx * 1.4).toFixed(1)} km`,
-        marketType: (isWholesale ? 'atacadista' : 'supermercado') as 'atacadista' | 'supermercado',
-      };
-    });
-
-    // Sort by price ascending to find real winner
-    calculated.sort((a, b) => a.totalPrice - b.totalPrice);
-    if (calculated.length > 0) {
-      calculated[0].isBestValue = true;
-      const highestPrice = Math.max(...calculated.map(c => c.totalPrice));
-      calculated[0].savings = Number((highestPrice - calculated[0].totalPrice).toFixed(2));
+    if (messages.length > 0) {
+      localStorage.setItem('listme_messages', JSON.stringify(messages));
     }
+  }, [messages]);
 
-    setMarkets(calculated);
-  }, [items, stateCode]);
-
-  // Total Estimated Price for current list
-  const totalListValue = useMemo(() => {
-    return items.reduce((acc, it) => acc + (it.basePrice || 10) * (it.quantity || 1), 0);
+  // Save items whenever they change
+  useEffect(() => {
+    localStorage.setItem('listme_items', JSON.stringify(items));
   }, [items]);
 
-  // Best market winner
-  const bestMarket = useMemo(() => {
-    return markets.find(m => m.isBestValue) || markets[0];
+  // Save expenses whenever they change
+  useEffect(() => {
+    localStorage.setItem('listme_expenses', JSON.stringify(expenses));
+  }, [expenses]);
+
+  // Save smart tip whenever it changes
+  useEffect(() => {
+    if (smartTip) {
+      localStorage.setItem('listme_smart_tip', smartTip);
+    } else {
+      localStorage.removeItem('listme_smart_tip');
+    }
+  }, [smartTip]);
+
+  // Save markets whenever they change
+  useEffect(() => {
+    if (markets.length > 0) {
+      localStorage.setItem('listme_markets', JSON.stringify(markets));
+    }
   }, [markets]);
 
-  // Filtered & Sorted Markets for Screen 3
-  const sortedMarkets = useMemo(() => {
-    const list = [...markets];
-    if (priceSortMode === 'cheapest') {
-      return list.sort((a, b) => a.totalPrice - b.totalPrice);
-    } else {
-      return list.sort((a, b) => {
-        const distA = parseFloat(a.distance?.replace(',', '.') || '99');
-        const distB = parseFloat(b.distance?.replace(',', '.') || '99');
-        return distA - distB;
+  // Recalculate single winning market totals when quantities change without wiping out AI live quotes
+  useEffect(() => {
+    if (!stateCode) return;
+    const baseMarkets = getMarketsForLocation(stateCode);
+    const savedCustom = localStorage.getItem('listme_custom_markets');
+    let customList: MarketComparison[] = [];
+    if (savedCustom) {
+      try {
+        customList = JSON.parse(savedCustom);
+      } catch {}
+    }
+    const allAvailableMarkets = [...baseMarkets, ...customList];
+
+    if (items.length === 0) {
+      if (markets.length === 0) {
+        setMarkets(allAvailableMarkets);
+      }
+      return;
+    }
+
+    // Se a cotação acabou de vir da IA em tempo real, mantém os preços individuais da IA intactos
+    if (isAiQuotedRef.current) {
+      isAiQuotedRef.current = false;
+      return;
+    }
+
+    const currentWinnerName = items[0]?.bestMarket?.name || markets.find((m) => m.isBestValue)?.marketName || allAvailableMarkets[0]?.marketName;
+    const totalCurrent = items.reduce((sum, item) => {
+      const p = item.bestMarket?.price || item.basePrice || 12.50;
+      return sum + (p * item.quantity);
+    }, 0);
+
+    setMarkets((prevMarkets) => {
+      const listToRank = (prevMarkets && prevMarkets.length > 0) ? prevMarkets : allAvailableMarkets;
+      const winner = listToRank.find((m) => m.marketName === currentWinnerName) || listToRank[0];
+      const newWinnerTotal = Number(totalCurrent.toFixed(2));
+      const winnerPrevTotal = winner.totalPrice > 0 ? winner.totalPrice : newWinnerTotal;
+
+      const updated = listToRank.map((m, idx) => {
+        const isWin = m.marketName === winner.marketName;
+        if (isWin) {
+          return {
+            ...m,
+            totalPrice: newWinnerTotal,
+            coveredItems: items.length,
+            totalItems: items.length,
+            isBestValue: true,
+          };
+        }
+
+        // Calcula a proporção individual da rede em relação ao vencedor
+        let ratio = (winnerPrevTotal > 0 && m.totalPrice > winnerPrevTotal)
+          ? (m.totalPrice / winnerPrevTotal)
+          : 0;
+
+        if (ratio <= 1) {
+          const isAtacado = m.marketType === 'atacadista' || /atacad|circuito|assai|fort|kompr|stok/i.test(m.marketName);
+          ratio = isAtacado ? 1.025 + idx * 0.015 : 1.07 + idx * 0.025;
+        }
+
+        const calcPrice = Number((newWinnerTotal * ratio).toFixed(2));
+        return {
+          ...m,
+          totalPrice: calcPrice,
+          coveredItems: items.length,
+          totalItems: items.length,
+          savings: 0,
+          isBestValue: false,
+        };
+      });
+
+      // Ordena rigorosamente do menor preço para o maior e garante que nenhuma loja repita o valor
+      updated.sort((a, b) => a.totalPrice - b.totalPrice);
+      for (let i = 1; i < updated.length; i++) {
+        if (updated[i].totalPrice <= updated[i - 1].totalPrice) {
+          updated[i].totalPrice = Number((updated[i - 1].totalPrice + 2.50 + i * 0.80).toFixed(2));
+        }
+      }
+
+      if (updated.length > 1) {
+        updated[0].savings = Number((updated[1].totalPrice - updated[0].totalPrice).toFixed(2));
+      }
+
+      return updated;
+    });
+  }, [items, stateCode]);
+
+  const handleOnboardingComplete = (profile: {
+    houseName: string;
+    userName: string;
+    city: string;
+    state: string;
+  }) => {
+    setHouseName(profile.houseName);
+    setUserName(profile.userName);
+    setCity(profile.city);
+    setStateCode(profile.state);
+    localStorage.setItem('listme_profile', JSON.stringify(profile));
+    setIsOnboardingOpen(false);
+    // Abrir o pop-up do tutorial de atalho no celular logo após a localização
+    setIsInstallModalOpen(true);
+
+    const regional = getMarketsForLocation(profile.state);
+    setMarkets(regional);
+
+    setMessages([
+      {
+        id: `msg-welcome-${Date.now()}`,
+        role: 'assistant',
+        text: `Configuração concluída! Residência "${profile.houseName}" em ${profile.city}, ${profile.state}.\n\nRedes monitoradas: ${regional.map(r => r.marketName).join(', ')}. Pode falar no microfone ou digitar sua lista de compras!`,
+        timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      }
+    ]);
+
+    showToast(`Redes de ${profile.city} ativadas!`);
+  };
+
+  const handleResetAllData = () => {
+    if (confirm('Deseja realmente zerar todos os dados e redefinir sua localização?')) {
+      localStorage.removeItem('listme_profile');
+      localStorage.removeItem('listme_items');
+      localStorage.removeItem('listme_expenses');
+      localStorage.removeItem('listme_messages');
+      localStorage.removeItem('listme_custom_markets');
+      setItems([]);
+      setExpenses([]);
+      setMessages([]);
+      setIsProfileModalOpen(false);
+      setIsOnboardingOpen(true);
+    }
+  };
+
+  const handleClearChat = () => {
+    localStorage.removeItem('listme_messages');
+    const welcomeMsg: ChatMessage = {
+      id: `msg-welcome-${Date.now()}`,
+      role: 'assistant',
+      text: `Histórico limpo. O que você gostaria de cotar hoje em ${city}?`,
+      timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+    };
+    setMessages([welcomeMsg]);
+    showToast('Histórico do chat reiniciado.');
+  };
+
+  const handleAddCustomMarket = () => {
+    const marketName = window.prompt(`Qual o nome do mercado que você quer adicionar em ${city}?`);
+    if (marketName && marketName.trim()) {
+      const trimmed = marketName.trim();
+      const newM: MarketComparison = {
+        marketId: `custom-${Date.now()}`,
+        marketName: trimmed,
+        logoColor: '#0B0E11',
+        coveredItems: items.length,
+        totalItems: items.length,
+        totalPrice: Number((totalBasketValue * 0.94).toFixed(2)),
+        savings: Number((totalBasketValue * 0.06).toFixed(2)),
+        clubDiscounts: 0,
+        isBestValue: false,
+      };
+      const updated = [...markets, newM];
+      setMarkets(updated);
+      localStorage.setItem('listme_custom_markets', JSON.stringify([newM]));
+      showToast(`${trimmed} adicionado às cotações de ${city}!`);
+    }
+  };
+
+  const completedItemsCount = items.filter((i) => i.checked).length;
+  const pendingItemsCount = items.length - completedItemsCount;
+  const totalBasketValue = markets[0]?.totalPrice || 0;
+  const estimatedSavings = markets[0]?.savings || 0;
+  const totalSpentReal = expenses.reduce((sum, e) => sum + e.totalPaid, 0);
+  const totalEstimatedApp = expenses.reduce((sum, e) => sum + (e.estimatedTotal || e.totalPaid), 0);
+  const totalRealEconomy = Number((totalEstimatedApp - totalSpentReal).toFixed(2));
+
+  // Agrupamento Inteligente por Corredores de Supermercado (Rota Física de Mercado)
+  const aisleGroups = groupItemsByAisles(items);
+  const activeAislesCount = aisleGroups.filter((g) => g.pendingItems.length > 0).length;
+  const completedAislesCount = aisleGroups.filter((g) => g.isFullyChecked).length;
+
+  // Fallback local se estiver offline ou falhar a requisição
+  const fallbackLocalQuote = (text: string, loadingId: string) => {
+    const isQuestion = text.includes('?') || /\b(compensa|qual|onde|quanto|como|vale a pena|melhor|dúvida|marca)\b/i.test(text);
+    if (isQuestion) {
+      const assistantMsg: ChatMessage = {
+        id: `msg-${Date.now()}`,
+        role: 'assistant',
+        text: `Para responder com precisão sobre o que compensa mais em ${city}, nossa IA analisa encartes em tempo real. Verifique sua conexão e tente enviar novamente em instantes!`,
+        timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      };
+      setMessages((prev) => prev.filter((m) => m.id !== loadingId).concat(assistantMsg));
+      return;
+    }
+
+    const parsed = extractGroceryItems(text);
+    const winningMarket = markets.find((m) => m.isBestValue) || markets[0] || {
+      marketName: 'Circuito Atacadista',
+      priceFactor: 0.88,
+    };
+    const factor = winningMarket.priceFactor || 0.88;
+
+    const detectedItems: Array<{
+      name: string;
+      matchedProduct: string;
+      market: string;
+      price: number;
+      basePrice: number;
+      priceType: 'normal' | 'club' | 'promo';
+      quantity: number;
+      unit: string;
+      category: string;
+    }> = parsed.map((item) => ({
+      name: item.name,
+      matchedProduct: item.matchedProduct,
+      market: winningMarket.marketName,
+      price: Number((item.basePrice * factor).toFixed(2)),
+      basePrice: item.basePrice,
+      priceType: 'promo',
+      quantity: item.quantity,
+      unit: item.unit,
+      category: item.category,
+    }));
+
+    if (detectedItems.length === 0) {
+      detectedItems.push({
+        name: text.slice(0, 30),
+        matchedProduct: `${text.slice(0, 30)} (Melhor cotação em ${city})`,
+        market: winningMarket.marketName,
+        price: Number((14.50 * factor).toFixed(2)),
+        basePrice: 14.50,
+        priceType: 'promo',
+        quantity: 1,
+        unit: 'un',
+        category: 'Diversos',
       });
     }
-  }, [markets, priceSortMode]);
 
-  // Group items by category / aisle
-  const groupedCategories = useMemo(() => {
-    const map = new Map<string, ListItem[]>();
-    items.forEach(it => {
-      const cat = it.category || 'Mercearia';
-      if (!map.has(cat)) map.set(cat, []);
-      map.get(cat)!.push(it);
-    });
-    return Array.from(map.entries()).map(([name, catItems]) => ({
-      name,
-      items: catItems,
-      allChecked: catItems.length > 0 && catItems.every(i => i.checked),
-      checkedCount: catItems.filter(i => i.checked).length,
-      image: CATEGORY_IMAGES[name] || '/categories/mercearia.jpg',
+    const newItemsToAdd: ListItem[] = detectedItems.map((item, idx) => ({
+      id: `item-${Date.now()}-${idx}`,
+      name: item.name,
+      matchedItem: item.matchedProduct,
+      basePrice: item.basePrice,
+      quantity: item.quantity,
+      unit: item.unit,
+      category: item.category,
+      checked: false,
+      bestMarket: {
+        name: item.market,
+        price: item.price,
+        priceType: item.priceType,
+      },
     }));
-  }, [items]);
 
-  // Filtered items for Search in List Tab
-  const filteredGroupedCategories = useMemo(() => {
-    if (!listSearchQuery.trim()) return groupedCategories;
-    const query = listSearchQuery.toLowerCase();
-    return groupedCategories
-      .map(group => ({
-        ...group,
-        items: group.items.filter(it => it.name.toLowerCase().includes(query)),
-      }))
-      .filter(group => group.items.length > 0);
-  }, [groupedCategories, listSearchQuery]);
+    setItems((prev) => [...newItemsToAdd, ...prev]);
 
-  // 3. CORE PROCESSING: Voice / Text / Photo with Backend AI + Local Fallback
+    const assistantMsg: ChatMessage = {
+      id: `msg-${Date.now()}`,
+      role: 'assistant',
+      text: `Calculei sua compra completa em ${city}. O supermercado onde o total sai mais barato é o **${winningMarket.marketName}**.\n\nTodos os ${detectedItems.length} itens foram direcionados para lá para você economizar em uma única viagem:`,
+      timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      itemsFound: detectedItems,
+    };
+
+    setMessages((prev) => prev.filter((m) => m.id !== loadingId).concat(assistantMsg));
+    showToast(`Lista consolidada no ${winningMarket.marketName}!`);
+  };
+
+  // Cotação Inteligente com Busca Web em Tempo Real na OpenAI (tabloides & encartes)
   const handleProcessUserText = async (text: string) => {
     if (!text.trim()) return;
 
     const userText = text.trim();
-    setIsSearchingOffers(true);
-    setAssistantFeedback(null);
+    const userMsg: ChatMessage = {
+      id: `msg-${Date.now()}`,
+      role: 'user',
+      text: userText,
+      timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+    };
 
-    const curCity = gpsLocation?.city || city || 'Colombo';
-    const curState = gpsLocation?.state || stateCode || 'PR';
-    const curNeighborhood = gpsLocation?.neighborhood || neighborhood || '';
+    setMessages((prev) => [...prev, userMsg]);
+    setInputText('');
+    setIsSearchingOffers(true);
+
+    // Identificar localização em tempo real (GPS ativo ou Perfil)
+    let currentCity = gpsLocation?.city || city || 'Colombo';
+    let currentState = gpsLocation?.state || stateCode || 'PR';
+    let currentNeighborhood = gpsLocation?.neighborhood || neighborhood || '';
+    let currentLat = gpsLocation?.latitude || null;
+    let currentLng = gpsLocation?.longitude || null;
+
+    // Tentar obter coordenadas mais recentes rapidamente se o navegador permitir (1.2s timeout)
+    if (typeof window !== 'undefined' && navigator.geolocation) {
+      try {
+        const quickPos = await new Promise<GeolocationPosition | null>((resolve) => {
+          const t = setTimeout(() => resolve(null), 1200);
+          navigator.geolocation.getCurrentPosition(
+            (p) => {
+              clearTimeout(t);
+              resolve(p);
+            },
+            () => {
+              clearTimeout(t);
+              resolve(null);
+            },
+            { enableHighAccuracy: true, timeout: 1200, maximumAge: 10000 }
+          );
+        });
+
+        if (quickPos) {
+          currentLat = quickPos.coords.latitude;
+          currentLng = quickPos.coords.longitude;
+        }
+      } catch {}
+    }
+
+    const locLabel = currentNeighborhood
+      ? `${currentCity} (${currentNeighborhood})`
+      : `${currentCity}, ${currentState}`;
+
+    const loadingId = `msg-loading-${Date.now()}`;
+    const loadingMsg: ChatMessage = {
+      id: loadingId,
+      role: 'assistant',
+      text: `🔍 **Pesquisando mercados mais próximos de ${locLabel}...**\n\nIdentificamos sua localização em tempo real e nossa IA está comparando as redes e atacarejos com menor preço num raio de até 5km de onde você está agora.`,
+      timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+    };
+
+    setMessages((prev) => [...prev, loadingMsg]);
 
     try {
       const res = await fetch('/api/quote/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          city: curCity,
-          state: curState,
-          neighborhood: curNeighborhood,
-          latitude: gpsLocation?.latitude || null,
-          longitude: gpsLocation?.longitude || null,
+          city: currentCity,
+          state: currentState,
+          neighborhood: currentNeighborhood,
+          latitude: currentLat,
+          longitude: currentLng,
           rawInput: userText,
           radiusKm: 5,
         }),
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        if (data && (data.replyText || Array.isArray(data.items))) {
-          if (Array.isArray(data.items) && data.items.length > 0) {
-            const newItems: ListItem[] = data.items.map((it: any, idx: number) => ({
-              id: `item-${Date.now()}-${idx}`,
-              name: it.name,
-              matchedItem: it.matchedProduct || it.name,
-              basePrice: Number(it.basePrice || it.price || 12.9),
-              quantity: Number(it.quantity || 1),
-              unit: it.unit || 'un',
-              category: it.category || 'Mercearia',
-              checked: false,
-            }));
+      if (!res.ok) {
+        throw new Error(`Erro na API (${res.status})`);
+      }
 
-            setItems(prev => {
-              const existingNames = new Set(prev.map(p => p.name.toLowerCase()));
-              const filteredNew = newItems.filter(ni => !existingNames.has(ni.name.toLowerCase()));
-              const updated = [...prev, ...filteredNew];
-              localStorage.setItem('listme_items', JSON.stringify(updated));
-              return updated;
-            });
-          }
+      const data = await res.json();
 
-          if (Array.isArray(data.rankedMarkets) && data.rankedMarkets.length > 0) {
-            const ranked: MarketComparison[] = data.rankedMarkets.map((rm: any, idx: number) => ({
-              marketId: rm.marketId || `m-${idx}`,
-              marketName: rm.marketName || rm.name,
-              logoColor: idx === 0 ? '#84E000' : '#14181D',
-              coveredItems: rm.coveredItems || data.items?.length || items.length,
-              totalItems: rm.totalItems || data.items?.length || items.length,
-              totalPrice: Number(rm.totalPrice) || 0,
-              savings: Number(rm.savings) || 0,
-              isBestValue: idx === 0,
-              clubDiscounts: 0,
-              distance: rm.distance || (idx === 0 ? '2,4 km' : `${(2.4 + idx * 1.2).toFixed(1)} km`),
-              marketType: /atacad|assai|circuito|fort|kompr/i.test(rm.marketName || '') ? 'atacadista' : 'supermercado',
-            }));
-            setMarkets(ranked);
-          }
-
-          setAssistantFeedback(data.replyText || `Adicionados ${data.items?.length || 0} produtos à sua lista com sucesso!`);
-          showToast(`${data.items?.length || 0} produtos adicionados à sua lista!`);
-          confetti({ particleCount: 30, spread: 60, origin: { y: 0.8 } });
-          return;
+      if (data && (data.replyText || (data.winner && Array.isArray(data.items)))) {
+        if (data.smartTip) {
+          setSmartTip(data.smartTip);
         }
-      }
-      throw new Error('Falha na resposta da API');
-    } catch (err) {
-      console.warn('Utilizando extração local sem ruídos:', err);
-      const parsed = extractGroceryItems(userText);
-      if (parsed.length > 0) {
-        const newItems: ListItem[] = parsed.map((it, idx) => ({
-          id: `item-${Date.now()}-${idx}`,
-          name: it.name,
-          matchedItem: it.matchedProduct,
-          basePrice: it.basePrice,
-          quantity: it.quantity,
-          unit: it.unit,
-          category: it.category,
-          checked: false,
-        }));
 
-        setItems(prev => {
-          const existingNames = new Set(prev.map(p => p.name.toLowerCase()));
-          const filteredNew = newItems.filter(ni => !existingNames.has(ni.name.toLowerCase()));
-          const updated = [...prev, ...filteredNew];
-          localStorage.setItem('listme_items', JSON.stringify(updated));
-          return updated;
-        });
+        const winnerName = data.winner?.name || markets[0]?.marketName || 'Circuito Atacadista';
+        const winnerTotal = Number(data.winner?.totalBasket) || 0;
+        const savingsVsSecond = Number(data.winner?.savingsVsSecond) || 0;
 
-        const namesList = parsed.map(p => p.name).join(', ');
-        setAssistantFeedback(`Identificamos: ${namesList}. Atualizamos sua lista e recalculamos os mercados!`);
-        showToast(`${parsed.length} itens adicionados com sucesso!`);
-        confetti({ particleCount: 25, spread: 50, origin: { y: 0.8 } });
-      } else {
-        showToast('Nenhum produto identificado. Fale ou digite novamente.');
+        if (Array.isArray(data.items) && data.items.length > 0) {
+          let newMarkets: MarketComparison[] = [];
+          if (data.rankedMarkets && Array.isArray(data.rankedMarkets) && data.rankedMarkets.length > 0) {
+            newMarkets = data.rankedMarkets.map((rm: any, idx: number) => {
+              const isAtacado = rm.marketType === 'atacadista' || /atacad|circuito|assai|fort|kompr|stok|rold/i.test(rm.marketName || rm.name || '');
+              return {
+                marketId: rm.marketId || `m-${idx}`,
+                marketName: rm.marketName || rm.name,
+                logoColor: idx === 0 ? '#0B0E11' : idx === 1 ? '#F57C00' : idx === 2 ? '#E65100' : idx === 3 ? '#007A33' : '#1565C0',
+                coveredItems: rm.coveredItems || data.items.length,
+                totalItems: rm.totalItems || data.items.length,
+                totalPrice: Number(rm.totalPrice || (idx === 0 ? winnerTotal : Number((winnerTotal * (1 + idx * 0.035)).toFixed(2)))),
+                savings: Number(rm.savings || (idx === 0 ? savingsVsSecond : 0)),
+                isBestValue: idx === 0,
+                clubDiscounts: 0,
+                distance: rm.distance || '',
+                marketType: (isAtacado ? 'atacadista' : 'supermercado') as 'atacadista' | 'supermercado',
+              };
+            });
+          } else if (winnerTotal > 0) {
+            newMarkets = [
+              {
+                marketId: `winner-${Date.now()}`,
+                marketName: winnerName,
+                logoColor: '#0B0E11',
+                coveredItems: data.items.length,
+                totalItems: data.items.length,
+                totalPrice: winnerTotal,
+                savings: savingsVsSecond,
+                isBestValue: true,
+                clubDiscounts: 0,
+                distance: data.winner?.distance || '2.8 km',
+                marketType: (/atacad|circuito|assai|fort|kompr|stok/i.test(winnerName) ? 'atacadista' : 'supermercado') as 'atacadista' | 'supermercado',
+              },
+              ...(data.runnerUp ? [{
+                marketId: `runner-${Date.now()}`,
+                marketName: data.runnerUp.name || 'Max Atacadista',
+                logoColor: '#F57C00',
+                coveredItems: data.items.length,
+                totalItems: data.items.length,
+                totalPrice: Number(data.runnerUp.totalBasket) || Number((winnerTotal * 1.035).toFixed(2)),
+                savings: 0,
+                isBestValue: false,
+                clubDiscounts: 0,
+                distance: data.runnerUp.distance || '3.2 km',
+                marketType: (/atacad|circuito|assai|fort|kompr|stok/i.test(data.runnerUp.name || '') ? 'atacadista' : 'supermercado') as 'atacadista' | 'supermercado',
+              }] : [])
+            ];
+          }
+
+          const getSafePrice = (productName: string, rawPrice: any): number => {
+            const num = Number(rawPrice);
+            if (!isNaN(num) && num > 0) {
+              const lower = (productName || '').toLowerCase();
+              if (lower.includes('ovo') && num > 25) {
+                if (lower.includes('30')) return 18.90;
+                if (lower.includes('20')) return 14.50;
+                return 18.90;
+              }
+              return Number(num.toFixed(2));
+            }
+            const lower = (productName || '').toLowerCase();
+            if (lower.includes('ovo')) {
+              if (lower.includes('30')) return 18.90;
+              if (lower.includes('20')) return 14.50;
+              if (lower.includes('16')) return 12.90;
+              if (lower.includes('12') || lower.includes('duzia') || lower.includes('dúzia')) return 10.90;
+              if (lower.includes('6') || lower.includes('meia')) return 5.90;
+              return 18.90;
+            }
+            if (lower.includes('primeira') || lower.includes('patinho') || lower.includes('alcatra')) return 34.90;
+            if (lower.includes('segunda') || lower.includes('acém') || lower.includes('acem')) return 22.90;
+            if (lower.includes('arroz')) return 25.90;
+            if (lower.includes('feij')) return 5.90;
+            if (lower.includes('carne') || lower.includes('moída') || lower.includes('bovina')) return 24.90;
+            if (lower.includes('doritos') || lower.includes('salgadinho')) return 10.90;
+            if (lower.includes('açúcar') || lower.includes('acucar')) {
+              if (lower.includes('1kg') || lower.includes('1 kg')) return 2.69;
+              return 13.50;
+            }
+            if (lower.includes('leite')) return 4.89;
+            if (lower.includes('óleo') || lower.includes('oleo')) return 6.49;
+            if (lower.includes('café') || lower.includes('cafe')) return 18.90;
+            return 12.90;
+          };
+
+          const newItemsToAdd: ListItem[] = data.items.map((it: any, idx: number) => {
+            let itemName = it.name || it.matchedProduct || 'Produto';
+            let itemQuantity = it.quantity || 1;
+            let itemUnit = it.unit || 'un';
+
+            const lower = (itemName + ' ' + (it.matchedProduct || '')).toLowerCase();
+            if (lower.includes('ovo')) {
+              if (itemQuantity === 30 || lower.includes('30') || it.bestPrice > 25) {
+                itemName = 'Ovos (Bandeja 30 un)';
+                itemQuantity = 1;
+                itemUnit = 'bandeja';
+              } else if (itemQuantity === 20 || lower.includes('20')) {
+                itemName = 'Ovos (Bandeja 20 un)';
+                itemQuantity = 1;
+                itemUnit = 'bandeja';
+              } else if (itemQuantity === 16 || lower.includes('16')) {
+                itemName = 'Ovos (16 un)';
+                itemQuantity = 1;
+                itemUnit = 'bandeja';
+              } else if (itemQuantity === 6 || lower.includes('6') || lower.includes('meia')) {
+                itemName = 'Ovos (Meia Dúzia 6 un)';
+                itemQuantity = 1;
+                itemUnit = 'estojo';
+              } else if (itemQuantity === 12 || lower.includes('12') || lower.includes('duzia') || lower.includes('dúzia')) {
+                itemName = 'Ovos (Dúzia 12 un)';
+                itemQuantity = 1;
+                itemUnit = 'dz';
+              }
+            }
+
+            const price = getSafePrice(itemName, it.bestPrice);
+            return {
+              id: `item-${Date.now()}-${idx}`,
+              name: itemName,
+              matchedItem: it.matchedProduct || itemName,
+              basePrice: price,
+              quantity: itemQuantity,
+              unit: itemUnit,
+              category: it.category || (lower.includes('ovo') ? 'Hortifrúti' : 'Geral'),
+              checked: false,
+              bestMarket: {
+                name: winnerName,
+                price: price,
+                priceType: 'promo',
+              },
+            };
+          });
+
+          // Sinaliza para o useEffect de itens não sobrescrever a cotação rica da IA
+          isAiQuotedRef.current = true;
+          if (newMarkets.length > 0) {
+            setMarkets(newMarkets);
+          }
+          setItems((prev) => [...newItemsToAdd, ...prev]);
+        }
+
+        // Usar resposta conversacional inteligente da IA ou resumo padrão
+        const assistantText = data.replyText || (
+          winnerTotal > 0
+            ? `🏆 **Melhor Cesta: ${winnerName}**\n\nTotal dos produtos: **R$ ${winnerTotal.toFixed(2).replace('.', ',')}**\nEconomia de **R$ ${savingsVsSecond.toFixed(2).replace('.', ',')}** em relação ao ${data.runnerUp?.name || 'segundo colocado'}.\n\n💡 **Aviso Inteligente:**\n${data.smartTip || 'Comprar todos os itens em uma única rede compensa o tempo e combustível.'}`
+            : (data.smartTip || 'Consulta concluída com sucesso!')
+        );
+
+        const fallbackItemPrice = (productName: string, rawPrice: any): number => {
+          const num = Number(rawPrice);
+          if (!isNaN(num) && num > 0) {
+            const lower = (productName || '').toLowerCase();
+            if (lower.includes('ovo') && num > 25) {
+              if (lower.includes('30')) return 18.90;
+              if (lower.includes('20')) return 14.50;
+              return 18.90;
+            }
+            return Number(num.toFixed(2));
+          }
+          const lower = (productName || '').toLowerCase();
+          if (lower.includes('ovo')) {
+            if (lower.includes('30')) return 18.90;
+            if (lower.includes('20')) return 14.50;
+            if (lower.includes('16')) return 12.90;
+            if (lower.includes('12') || lower.includes('duzia') || lower.includes('dúzia')) return 10.90;
+            if (lower.includes('6') || lower.includes('meia')) return 5.90;
+            return 18.90;
+          }
+          if (lower.includes('primeira') || lower.includes('patinho') || lower.includes('alcatra')) return 34.90;
+          if (lower.includes('segunda') || lower.includes('acém') || lower.includes('acem')) return 22.90;
+          if (lower.includes('arroz')) return 25.90;
+          if (lower.includes('feij')) return 5.90;
+          if (lower.includes('carne') || lower.includes('moída') || lower.includes('bovina')) return 24.90;
+          if (lower.includes('doritos') || lower.includes('salgadinho')) return 10.90;
+          if (lower.includes('açúcar') || lower.includes('acucar')) {
+            if (lower.includes('1kg') || lower.includes('1 kg')) return 2.69;
+            return 13.50;
+          }
+          if (lower.includes('leite')) return 4.89;
+          if (lower.includes('óleo') || lower.includes('oleo')) return 6.49;
+          if (lower.includes('café') || lower.includes('cafe')) return 18.90;
+          return 12.90;
+        };
+
+        const detectedList = (Array.isArray(data.items) && data.items.length > 0)
+          ? data.items.map((it: any) => {
+              const safeP = fallbackItemPrice(it.name || it.matchedProduct, it.bestPrice);
+              return {
+                name: it.name,
+                matchedProduct: it.matchedProduct || it.name,
+                market: winnerName,
+                price: safeP,
+                basePrice: safeP,
+                priceType: 'promo' as const,
+                quantity: it.quantity || 1,
+                unit: it.unit || 'un',
+                category: it.category || 'Geral',
+              };
+            })
+          : undefined;
+
+        const finalAssistantMsg: ChatMessage = {
+          id: `msg-${Date.now()}`,
+          role: 'assistant',
+          text: assistantText,
+          timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+          itemsFound: detectedList,
+        };
+
+        setMessages((prev) => prev.filter((m) => m.id !== loadingId).concat(finalAssistantMsg));
+        showToast(`Consultor LIST.ME respondeu!`);
+        return;
       }
+
+      throw new Error('Resposta sem conteúdo válido');
+    } catch (err: any) {
+      console.warn('Erro ao obter cotação via IA, acionando fallback local:', err);
+      fallbackLocalQuote(userText, loadingId);
     } finally {
       setIsSearchingOffers(false);
     }
   };
 
-  // Item Manipulations
-  const handleToggleItem = (id: string) => {
-    setItems(prev => {
-      const updated = prev.map(item => item.id === id ? { ...item, checked: !item.checked } : item);
-      localStorage.setItem('listme_items', JSON.stringify(updated));
-      return updated;
-    });
-  };
-
-  const handleUpdateQuantity = (id: string, delta: number) => {
-    setItems(prev => {
-      const updated = prev
-        .map(item => {
-          if (item.id === id) {
-            const nextQty = Math.max(1, item.quantity + delta);
-            return { ...item, quantity: nextQty };
+  const toggleItemChecked = (id: string) => {
+    setItems((prev) => {
+      const nextItems = prev.map((item) => {
+        if (item.id === id) {
+          const nextState = !item.checked;
+          if (nextState) {
+            confetti({
+              particleCount: 22,
+              spread: 45,
+              origin: { y: 0.82 },
+              colors: ['#84E000', '#92F200', '#0B0E11', '#497D00'],
+            });
           }
-          return item;
-        });
-      localStorage.setItem('listme_items', JSON.stringify(updated));
-      return updated;
+          return { ...item, checked: nextState };
+        }
+        return item;
+      });
+
+      const allChecked = nextItems.length > 0 && nextItems.every((item) => item.checked);
+      const wasAllChecked = prev.length > 0 && prev.every((item) => item.checked);
+
+      if (allChecked && !wasAllChecked) {
+        const winningMarket = markets[0]?.marketName || nextItems[0]?.bestMarket?.name || '';
+        if (winningMarket) {
+          setNewExpenseMarket(winningMarket);
+        }
+        setLastEstimatedTotal(totalBasketValue);
+
+        setTimeout(() => {
+          confetti({
+            particleCount: 85,
+            spread: 90,
+            origin: { y: 0.5 },
+            colors: ['#84E000', '#92F200', '#0B0E11', '#497D00'],
+          });
+          switchTab('expenses');
+          showToast('🎉 Lista completa! Registre o valor pago no caixa.');
+        }, 450);
+      }
+
+      return nextItems;
     });
   };
 
-  const handleDeleteItem = (id: string) => {
-    setItems(prev => {
-      const updated = prev.filter(item => item.id !== id);
-      localStorage.setItem('listme_items', JSON.stringify(updated));
-      return updated;
-    });
-    showToast('Item removido da lista');
+  const updateQuantity = (id: string, delta: number) => {
+    setItems((prev) =>
+      prev.map((item) => {
+        if (item.id === id) {
+          return { ...item, quantity: Math.max(1, item.quantity + delta) };
+        }
+        return item;
+      })
+    );
   };
 
-  const handleAddManualItem = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newItemName.trim()) return;
+  const deleteItem = (id: string) => {
+    setItems((prev) => prev.filter((item) => item.id !== id));
+    showToast('Item removido.');
+  };
 
-    const parsedPrice = parseFloat(newItemPrice.replace(',', '.')) || 10.90;
-    const newItem: ListItem = {
-      id: `item-${Date.now()}`,
-      name: newItemName.trim(),
-      matchedItem: `${newItemName.trim()} ${newItemUnit}`,
-      basePrice: parsedPrice,
-      quantity: newItemQty,
-      unit: newItemUnit,
-      category: newItemCategory,
-      checked: false,
-    };
+  const handleShareWhatsApp = () => {
+    if (items.length === 0) {
+      showToast('Adicione pelo menos um item para compartilhar.');
+      return;
+    }
 
-    setItems(prev => {
-      const updated = [...prev, newItem];
-      localStorage.setItem('listme_items', JSON.stringify(updated));
-      return updated;
-    });
+    const shareMessage = formatListByAisleForWhatsApp(
+      items,
+      markets[0]?.marketName || 'Mercado Vencedor',
+      totalBasketValue,
+      city ? `${city}, ${stateCode}` : undefined
+    );
 
-    setNewItemName('');
-    setNewItemPrice('');
-    setNewItemQty(1);
-    setIsAddItemModalOpen(false);
-    showToast('Item adicionado à lista!');
+    window.open(`https://wa.me/?text=${encodeURIComponent(shareMessage)}`, '_blank');
   };
 
   const handleAddExpense = (e: React.FormEvent) => {
     e.preventDefault();
-    const paid = parseFloat(expenseTotal.replace(',', '.')) || 0;
-    const saved = parseFloat(expenseSaved.replace(',', '.')) || 0;
-    if (paid <= 0) return;
+    const val = parseFloat(newExpenseValue.replace(',', '.'));
+    if (!newExpenseMarket || isNaN(val) || val <= 0) {
+      showToast('Informe o mercado e o valor total pago.');
+      return;
+    }
+
+    const currentEstimate = lastEstimatedTotal > 0 ? lastEstimatedTotal : totalBasketValue;
 
     const newRecord: ExpenseRecord = {
       id: `exp-${Date.now()}`,
-      marketName: expenseMarket,
-      date: 'Hoje',
-      totalPaid: paid,
-      itemsCount: items.length,
-      estimatedEconomy: saved || Number((paid * 0.12).toFixed(2)),
+      marketName: newExpenseMarket,
+      date: new Date().toLocaleDateString('pt-BR'),
+      totalPaid: val,
+      itemsCount: items.length || 1,
+      estimatedEconomy: Number((val * 0.18).toFixed(2)),
+      estimatedTotal: currentEstimate > 0 ? Number(currentEstimate.toFixed(2)) : undefined,
+      notes: newExpenseNotes.trim() || undefined,
     };
 
-    setExpenses(prev => {
-      const updated = [newRecord, ...prev];
-      localStorage.setItem('listme_expenses', JSON.stringify(updated));
-      return updated;
+    const updatedExpenses = [newRecord, ...expenses];
+    setExpenses(updatedExpenses);
+    localStorage.setItem('listme_expenses', JSON.stringify(updatedExpenses));
+
+    setNewExpenseMarket('');
+    setNewExpenseValue('');
+    setNewExpenseNotes('');
+    setLastEstimatedTotal(0);
+
+    confetti({
+      particleCount: 50,
+      spread: 70,
+      origin: { y: 0.65 },
+      colors: ['#84E000', '#92F200', '#0B0E11', '#497D00'],
     });
 
-    setExpenseTotal('');
-    setExpenseSaved('');
-    setIsRecordExpenseModalOpen(false);
     showToast('Compra registrada com sucesso!');
-    confetti({ particleCount: 40, spread: 60, origin: { y: 0.6 } });
   };
 
-  const totalEconomizedMonth = useMemo(() => {
-    return expenses.reduce((acc, ex) => acc + ex.estimatedEconomy, 0);
-  }, [expenses]);
-
-  const averageEconomyPerPurchase = useMemo(() => {
-    if (expenses.length === 0) return 0;
-    return totalEconomizedMonth / expenses.length;
-  }, [expenses, totalEconomizedMonth]);
-
-  // Quick chips handler
-  const handleQuickAdd = (text: string) => {
-    handleProcessUserText(text);
+  const handleDeleteExpense = (id: string) => {
+    const updated = expenses.filter((e) => e.id !== id);
+    setExpenses(updated);
+    localStorage.setItem('listme_expenses', JSON.stringify(updated));
+    showToast('Registro de compra removido.');
   };
+
+  const handleAuthenticated = (profile: {
+    houseName: string;
+    userName: string;
+    email: string;
+    phone: string;
+    city: string;
+    state: string;
+    isNewRegistration: boolean;
+  }) => {
+    setHouseName(profile.houseName);
+    setUserName(profile.userName);
+    setUserEmail(profile.email);
+    setUserPhone(profile.phone);
+    setCity(profile.city);
+    setStateCode(profile.state);
+    const regional = getMarketsForLocation(profile.state);
+    setMarkets(regional);
+    setIsAuthenticated(true);
+    setIsOnboardingOpen(false);
+
+    if (profile.isNewRegistration) {
+      setTimeout(() => {
+        setIsInstallModalOpen(true);
+      }, 500);
+    }
+
+    setMessages([
+      {
+        id: `msg-welcome-${Date.now()}`,
+        role: 'assistant',
+        text: `Olá, ${profile.userName}! Seu acesso de assinante está ativo e sincronizado com os supermercados de **${profile.city}, ${profile.state}**.\n\nO que você precisa comprar hoje? Dite no microfone, envie uma foto da lista ou digite abaixo:`,
+        timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      },
+    ]);
+  };
+
+  // Se o usuário ainda não fez login ou cadastro, renderiza a tela de registro em tela cheia antes de qualquer coisa
+  if (isAuthenticated === false) {
+    return <AuthRegistrationScreen onAuthenticated={handleAuthenticated} />;
+  }
+
+  // Previne piscar de tela enquanto lê a sessão do localStorage
+  if (isAuthenticated === null) {
+    return (
+      <div className="min-h-screen bg-[#0B0E11] flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-2 border-[#84E000] border-t-transparent animate-spin" />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-[#0B0E11] text-white flex justify-center selection:bg-[#84E000] selection:text-black">
-      {/* Mobile Shell Container */}
-      <div className="w-full max-w-md bg-[#0B0E11] flex flex-col min-h-screen relative pb-24 shadow-2xl overflow-x-hidden">
-        
-        {/* Toast Notification */}
-        {toastMessage && (
-          <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 bg-[#14181D] text-white text-xs font-semibold rounded-2xl border border-[#84E000]/40 shadow-2xl flex items-center gap-2 animate-in fade-in slide-in-from-top-4 duration-200">
-            <span className="w-2 h-2 rounded-full bg-[#84E000] animate-ping" />
-            <span>{toastMessage}</span>
-          </div>
-        )}
+    <div className="min-h-screen bg-[#F0EFEA] flex justify-center items-center md:py-8 font-sans selection:bg-[#84E000] selection:text-neutral-950">
+      
+      {/* Onboarding Modal for First Time Users */}
+      <OnboardingModal
+        isOpen={isOnboardingOpen}
+        onComplete={handleOnboardingComplete}
+      />
 
-        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            TELA 1: INÍCIO — CRIAÇÃO INTELIGENTE DE LISTA
-            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-        {activeTab === 'home' && (
-          <div className="flex-1 flex flex-col px-5 pt-5 pb-6 animate-in fade-in duration-200">
-            
-            {/* 1. Header com Hamburger, Logo e Notificação */}
-            <div className="flex items-center justify-between py-2 mb-6">
-              <button
-                onClick={() => setIsMenuOpen(true)}
-                type="button"
-                className="w-10 h-10 rounded-full bg-[#14181D] border border-white/10 flex items-center justify-center text-neutral-300 hover:text-white hover:border-[#84E000]/50 transition"
-              >
-                <SlidersHorizontal size={18} />
-              </button>
+      {/* Tutorial de Instalação do Atalho no Celular */}
+      <InstallTutorialModal
+        isOpen={isInstallModalOpen}
+        onClose={() => setIsInstallModalOpen(false)}
+      />
 
-              <div className="flex items-center gap-1">
-                <span className="font-extrabold tracking-wider text-lg text-white">LIST</span>
-                <span className="font-extrabold text-lg text-[#84E000]">.ME</span>
-              </div>
+      {/* Main Luxury Smartphone Shell Container */}
+      <div className="w-full max-w-[420px] bg-[#F8F7F4] h-[100dvh] md:h-[860px] flex flex-col relative rounded-none md:rounded-[44px] shadow-floating border border-black/[0.08] overflow-hidden">
 
-              <button
-                onClick={() => switchTab('profile')}
-                type="button"
-                className="w-10 h-10 rounded-full bg-[#14181D] border border-white/10 flex items-center justify-center text-neutral-300 hover:text-white hover:border-[#84E000]/50 transition relative"
-              >
-                <User size={18} />
-                <span className="w-2 h-2 rounded-full bg-[#84E000] absolute top-2.5 right-2.5" />
-              </button>
+        {/* 1. Header Fixo no Topo — Design Minimalista de Luxo */}
+        <header className="shrink-0 px-5 pt-4 pb-3.5 flex items-center justify-between bg-white/70 backdrop-blur-xl z-30 hairline-border-b">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl overflow-hidden border border-black/10 shadow-xs ring-1 ring-black/5 shrink-0 bg-white">
+              <Image
+                src="/logo.png"
+                alt="Logo LIST.ME"
+                width={32}
+                height={32}
+                className="w-full h-full object-contain"
+                priority
+              />
             </div>
-
-            {/* 2. Título e Subtítulo Principal */}
-            <div className="mb-6">
-              <h1 className="text-2xl font-extrabold tracking-tight text-white mb-1">
-                Criar nova lista
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#84E000] animate-pulse" />
+                <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-neutral-500">
+                  {city || 'Localizando'}, {stateCode}
+                </span>
+              </div>
+              <h1 className="text-[13px] font-semibold text-neutral-900 leading-tight">
+                {houseName || 'Minha Residência'}
               </h1>
-              <p className="text-xs text-neutral-400 font-medium">
-                Fale o que você precisa comprar
-              </p>
             </div>
+          </div>
 
-            {/* 3. Card Central de Voz com Ondas Sonoras */}
-            <div className="bg-[#14181D] border border-white/10 rounded-3xl p-6 mb-6 shadow-xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-[#84E000]/5 rounded-full blur-2xl pointer-events-none" />
+          <div className="flex items-center gap-1.5">
+            <Link
+              href="/admin"
+              className="px-2.5 py-1.5 text-[10px] font-mono font-semibold text-[#84E000] bg-neutral-950 hover:bg-neutral-900 border border-neutral-800 rounded-full shadow-xs transition flex items-center gap-1"
+              title="Acessar Painel do Fundador"
+            >
+              <ShieldCheck size={11} />
+              Admin
+            </Link>
 
-              {isRecordingAudio ? (
-                <div className="py-2">
-                  <AudioRecorder
-                    onAudioCaptured={(transcript) => {
-                      setIsRecordingAudio(false);
-                      handleProcessUserText(transcript);
-                    }}
-                    onCancel={() => setIsRecordingAudio(false)}
-                  />
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center text-center">
-                  
-                  {/* Status Indicator */}
-                  <div className="flex items-center gap-2 mb-5">
-                    <span className="w-2 h-2 rounded-full bg-[#84E000] animate-pulse" />
-                    <span className="text-[11px] font-semibold tracking-wide text-neutral-400 uppercase">
-                      Estou ouvindo...
-                    </span>
-                  </div>
+            <button
+              onClick={() => setIsProfileModalOpen(true)}
+              className="px-3 py-1.5 text-[11px] font-medium text-neutral-700 bg-white/80 hover:bg-white hairline-border rounded-full shadow-xs transition flex items-center gap-1.5 hover:text-neutral-950"
+            >
+              <User size={12} className="text-neutral-400" />
+              Perfil
+            </button>
+          </div>
+        </header>
 
-                  {/* 21 Neon Sound Bars with Soundwave Animation */}
-                  <div className="flex items-center justify-center gap-1.5 h-16 w-full px-2 mb-6">
-                    {[6, 12, 18, 26, 38, 48, 56, 42, 30, 20, 36, 52, 60, 46, 32, 22, 14, 28, 40, 22, 10].map((h, idx) => (
-                      <span
-                        key={idx}
-                        style={{
-                          height: `${h}px`,
-                          animationDelay: `${(idx * 0.08).toFixed(2)}s`,
-                        }}
-                        className="w-1 bg-[#84E000] rounded-full animate-soundwave-pulse shadow-[0_0_8px_#84e00066]"
-                      />
-                    ))}
-                  </div>
-
-                  {/* Exemplo / Preview de Fala */}
-                  <p className="text-xs text-neutral-300 italic mb-6 max-w-xs leading-relaxed">
-                    &ldquo;Arroz, feijão, café, leite e produtos de limpeza&rdquo;
-                  </p>
-
-                  {/* Botão Primário: Criar Minha Lista / Gravar */}
-                  <button
-                    onClick={() => setIsRecordingAudio(true)}
-                    type="button"
-                    className="w-full py-3.5 px-6 bg-[#84E000] hover:bg-[#92F200] text-neutral-950 rounded-2xl font-bold text-sm shadow-lg shadow-[#84e000]/25 flex items-center justify-center gap-2.5 transition transform active:scale-95 duration-150"
-                  >
-                    <Mic size={18} />
-                    <span>Gravar com a voz</span>
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* 4. Linha de Ações Secundárias: Foto & Digitar */}
-            <div className="grid grid-cols-2 gap-3 mb-6">
-              <button
-                onClick={() => setIsPhotoModalOpen(true)}
-                type="button"
-                className="py-3 px-4 bg-[#14181D] hover:bg-[#1A2026] border border-white/10 hover:border-white/20 rounded-2xl flex items-center justify-center gap-2 text-xs font-semibold text-neutral-200 transition"
-              >
-                <Camera size={16} className="text-[#84E000]" />
-                <span>Foto da lista</span>
-              </button>
-
-              <button
-                onClick={() => setIsTextModalOpen(true)}
-                type="button"
-                className="py-3 px-4 bg-[#14181D] hover:bg-[#1A2026] border border-white/10 hover:border-white/20 rounded-2xl flex items-center justify-center gap-2 text-xs font-semibold text-neutral-200 transition"
-              >
-                <Keyboard size={16} className="text-[#84E000]" />
-                <span>Digitar itens</span>
-              </button>
-            </div>
-
-            {/* 5. Feedback da IA / Resposta de Cotação */}
-            {isSearchingOffers && (
-              <div className="bg-[#14181D] border border-[#84E000]/30 rounded-2xl p-4 mb-5 flex items-center gap-3 animate-pulse">
-                <Sparkles size={20} className="text-[#84E000] shrink-0 animate-spin" />
-                <div className="text-xs">
-                  <p className="font-semibold text-white">Pesquisando mercados mais próximos...</p>
-                  <p className="text-neutral-400 text-[11px]">Comparando Atacadão, Assaí e mercados de {city}.</p>
-                </div>
-              </div>
-            )}
-
-            {assistantFeedback && !isSearchingOffers && (
-              <div className="bg-[#14181D] border border-white/10 rounded-2xl p-4 mb-5 space-y-3">
-                <div className="flex items-start gap-2.5">
-                  <div className="w-7 h-7 rounded-xl bg-[#84E000]/15 border border-[#84E000]/30 flex items-center justify-center text-[#84E000] shrink-0 mt-0.5">
-                    <Sparkles size={14} />
-                  </div>
-                  <div className="flex-1">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#84E000]">Assistente LIST.ME</span>
-                    <p className="text-xs text-neutral-200 mt-1 leading-relaxed whitespace-pre-line">{assistantFeedback}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 pt-1">
-                  <button
-                    onClick={() => switchTab('lists')}
-                    type="button"
-                    className="flex-1 py-2 px-3 bg-white/10 hover:bg-white/15 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition"
-                  >
-                    <CheckSquare size={13} className="text-[#84E000]" />
-                    <span>Ver Minha Lista ({items.length})</span>
-                  </button>
-                  <button
-                    onClick={() => switchTab('prices')}
-                    type="button"
-                    className="flex-1 py-2 px-3 bg-[#84E000] hover:bg-[#92F200] text-neutral-950 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition"
-                  >
-                    <Tag size={13} />
-                    <span>Ver Menor Preço</span>
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* 6. Sugestões Rápidas de Adição */}
-            <div className="mb-6">
-              <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider block mb-2.5">
-                Adicionar rápido
-              </span>
-              <div className="flex flex-wrap gap-2">
-                {[
-                  'Arroz 5kg',
-                  'Feijão 1kg',
-                  'Bandeja com 20 ovos',
-                  'Café 500g',
-                  'Azeite de Oliva',
-                  '1kg Batata',
-                  'Leite Integral'
-                ].map((chip, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => handleQuickAdd(chip)}
-                    type="button"
-                    className="px-3 py-1.5 bg-[#14181D] hover:bg-[#84E000] hover:text-neutral-950 border border-white/10 rounded-full text-xs font-medium text-neutral-300 transition duration-150"
-                  >
-                    + {chip}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* 7. Card Resumo da Lista Atual */}
-            {items.length > 0 && (
-              <div className="mt-auto bg-[#14181D] border border-white/10 rounded-2xl p-4 flex items-center justify-between">
-                <div>
-                  <span className="text-xs font-bold text-white block">Sua lista ativa</span>
-                  <span className="text-[11px] text-neutral-400">
-                    {items.length} itens organizados · ~R$ {totalListValue.toFixed(2).replace('.', ',')}
-                  </span>
-                </div>
-                <button
-                  onClick={() => switchTab('lists')}
-                  type="button"
-                  className="px-3.5 py-2 bg-[#84E000] hover:bg-[#92F200] text-neutral-950 rounded-xl text-xs font-bold flex items-center gap-1 transition"
-                >
-                  <span>Abrir</span>
-                  <ChevronRight size={14} />
-                </button>
-              </div>
-            )}
-
+        {/* Toast Alert Flutuante */}
+        {toastMessage && (
+          <div className="absolute top-16 left-1/2 -translate-x-1/2 z-50 bg-neutral-950 text-white text-xs font-medium px-4 py-2 rounded-full shadow-elevated flex items-center gap-2 border border-white/10 animate-in fade-in slide-in-from-top-3">
+            <Sparkles size={13} className="text-[#84E000]" />
+            {toastMessage}
           </div>
         )}
 
-        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            TELA 2: LISTAS — ORGANIZAÇÃO POR CORREDORES
-            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-        {activeTab === 'lists' && (
-          <div className="flex-1 flex flex-col px-5 pt-5 pb-6 animate-in fade-in duration-200">
-            
-            {/* Header com Título e Total de Itens */}
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h1 className="text-2xl font-extrabold tracking-tight text-white mb-0.5">
-                  Minha lista
-                </h1>
-                <p className="text-xs text-neutral-400 font-medium">
-                  {items.length} itens organizados · Estimado ~R$ {totalListValue.toFixed(2).replace('.', ',')}
+        {/* 2. Área de Conteúdo Rolável com Espaçamentos Refinados */}
+        <main
+          key={activeTab}
+          ref={mainScrollRef}
+          style={{ overflowAnchor: 'none' }}
+          className={`flex-1 overflow-y-auto [overflow-anchor:none] px-5 sm:px-6 pt-3.5 ${activeTab === 'chat' ? 'pb-28' : 'pb-24'}`}
+        >
+
+          {/* ========================================= */}
+          {/* TAB 1: DASHBOARD INICIAL (BENTO LUXURY) */}
+          {/* ========================================= */}
+          {activeTab === 'dashboard' && (
+            <div className="space-y-3.5 animate-in fade-in duration-200">
+              
+              <div className="pt-1">
+                <p className="text-[10px] font-mono uppercase tracking-widest text-[#497D00] font-bold flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#84E000]" />
+                  INSPIRAÇÃO DO DIA
+                </p>
+                <h2 className="font-serif text-2xl font-bold text-neutral-900 tracking-tight mt-0.5">
+                  {userName ? `Olá, ${userName.trim().split(' ')[0]}, como está?` : 'Olá, como está?'}
+                </h2>
+                <p
+                  onClick={() => {
+                    const nextIdx = Math.floor(Math.random() * DAILY_QUOTES.length);
+                    setDailyQuote(DAILY_QUOTES[nextIdx]);
+                  }}
+                  title="Toque para ver outra mensagem de inspiração"
+                  className="text-xs text-neutral-600 mt-1 leading-relaxed cursor-pointer hover:text-neutral-900 transition"
+                >
+                  <span className="italic">&ldquo;{dailyQuote?.text || 'O Senhor é o meu pastor; de nada terei falta.'}&rdquo;</span>{' '}
+                  <span className="font-semibold text-[#497D00] font-mono text-[11px] whitespace-nowrap">
+                    — {dailyQuote?.reference || 'Salmos 23:1'}
+                  </span>
                 </p>
               </div>
 
-              <button
-                onClick={() => setIsAddItemModalOpen(true)}
-                type="button"
-                className="w-9 h-9 rounded-full bg-[#84E000] hover:bg-[#92F200] text-neutral-950 flex items-center justify-center font-bold shadow-lg shadow-[#84e000]/20 transition"
-              >
-                <Plus size={18} />
-              </button>
-            </div>
-
-            {/* Barra de Pesquisa */}
-            <div className="relative mb-5">
-              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
-              <input
-                type="text"
-                value={listSearchQuery}
-                onChange={(e) => setListSearchQuery(e.target.value)}
-                placeholder="Buscar itens na sua lista..."
-                className="w-full pl-10 pr-4 py-2.5 bg-[#14181D] border border-white/10 rounded-2xl text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-[#84E000] transition"
-              />
-              {listSearchQuery && (
-                <button
-                  onClick={() => setListSearchQuery('')}
-                  type="button"
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white"
-                >
-                  <X size={14} />
-                </button>
-              )}
-            </div>
-
-            {/* Lista de Categorias / Corredores */}
-            <div className="space-y-3 mb-6">
-              {filteredGroupedCategories.length === 0 ? (
-                <div className="text-center py-12 text-neutral-400">
-                  <ShoppingBag size={32} className="mx-auto text-neutral-600 mb-2" />
-                  <p className="text-xs font-semibold">Nenhum item encontrado</p>
-                  <p className="text-[11px] text-neutral-500 mt-1">Grave um áudio ou adicione produtos.</p>
+              {/* Hero Bento Card — Estilo Obsidian + Verde da Logo */}
+              <div className="bg-neutral-950 text-white p-5 rounded-[26px] shadow-elevated relative overflow-hidden border-2 border-[#84E000]">
+                <div className="absolute -right-6 -bottom-6 opacity-5 pointer-events-none text-white">
+                  <TrendingUp size={160} />
                 </div>
-              ) : (
-                filteredGroupedCategories.map((group) => {
-                  const isCollapsed = collapsedCategories[group.name] ?? false;
+
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/10 backdrop-blur-md text-[10px] font-medium tracking-wide uppercase text-white border border-white/10">
+                      <Sparkles size={10} className="text-[#84E000]" />
+                      Economia Estimada
+                    </span>
+                    <span className="text-[9px] font-mono text-neutral-950 font-bold bg-[#84E000] px-2 py-0.5 rounded-md uppercase">
+                      LIST.ME ALGO
+                    </span>
+                  </div>
+
+                  <div className="mt-3 mb-1 flex items-baseline gap-2">
+                    <span className="font-serif text-3xl sm:text-4xl font-normal tracking-tight text-white">
+                      R$ {estimatedSavings.toFixed(2).replace('.', ',')}
+                    </span>
+                    <span className="text-xs text-neutral-400 font-medium">
+                      {items.length > 0 ? 'nesta compra' : 'na sua região'}
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-neutral-300 leading-relaxed mb-4">
+                    {items.length > 0
+                      ? `Menor total encontrado no ${markets[0]?.marketName || 'mercado líder'}.`
+                      : `Cotações de supermercados em tempo real na sua região.`}
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-2 pt-3 border-t border-white/10">
+                    <div className="bg-white/5 rounded-2xl p-2.5 backdrop-blur-xs border border-white/5">
+                      <span className="text-[9px] uppercase text-neutral-400 block font-mono font-medium">
+                        Líder em Preço
+                      </span>
+                      <strong className="text-xs font-semibold text-white block truncate mt-0.5">
+                        {markets[0]?.marketName || 'Calculando...'}
+                      </strong>
+                    </div>
+                    <div className="bg-white/5 rounded-2xl p-2.5 backdrop-blur-xs border border-white/5">
+                      <span className="text-[9px] uppercase text-neutral-400 block font-mono font-medium">
+                        Total Estimado
+                      </span>
+                      <strong className="text-xs font-semibold text-[#84E000] font-mono block mt-0.5">
+                        R$ {totalBasketValue.toFixed(2).replace('.', ',')}
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Banner de Aviso Inteligente de Deslocamento */}
+              {smartTip && (
+                <div className="bg-[#84E000]/10 border border-[#84E000]/40 rounded-[22px] p-3.5 shadow-card flex items-start gap-2.5 animate-in fade-in duration-200">
+                  <div className="w-7 h-7 rounded-xl bg-[#84E000] text-neutral-950 flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
+                    <Sparkles size={14} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] font-mono uppercase text-[#386000] font-bold tracking-wider">
+                        AVISO INTELIGENTE DE DESLOCAMENTO
+                      </span>
+                      <button
+                        onClick={() => {
+                          setSmartTip(null);
+                          localStorage.removeItem('listme_smart_tip');
+                        }}
+                        className="text-neutral-400 hover:text-neutral-700 text-xs px-1"
+                        title="Fechar dica"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    <p className="text-xs text-neutral-800 leading-relaxed font-medium">
+                      {smartTip}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Card da Lista Ativa */}
+              <div className="bg-white hairline-border p-4 rounded-[24px] shadow-card">
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-[#497D00] font-bold">
+                      LISTA ATIVA
+                    </span>
+                    <h3 className="text-sm font-semibold text-neutral-900">
+                      Itens para Comprar
+                    </h3>
+                  </div>
+                  <span className="text-xs font-mono font-semibold px-2.5 py-0.5 bg-neutral-100 rounded-full text-neutral-800">
+                    {completedItemsCount}/{items.length} itens
+                  </span>
+                </div>
+
+                {items.length === 0 ? (
+                  <div className="py-3 text-center">
+                    <p className="text-xs text-neutral-500 mb-2">
+                      Sua lista está limpa.
+                    </p>
+                    <button
+                      onClick={() => switchTab('chat')}
+                      className="px-3.5 py-1.5 bg-neutral-950 hover:bg-neutral-800 text-white text-xs font-medium rounded-full shadow-xs transition inline-flex items-center gap-1.5"
+                    >
+                      <Plus size={12} /> Adicionar itens
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="w-full bg-neutral-100 h-1.5 rounded-full overflow-hidden my-3">
+                      <div
+                        className="bg-[#84E000] h-full rounded-full transition-all duration-300"
+                        style={{
+                          width: `${items.length ? (completedItemsCount / items.length) * 100 : 0}%`,
+                        }}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between pt-1">
+                      <div className="text-xs text-neutral-500">
+                        Total: <strong className="text-neutral-900 font-mono font-semibold">R$ {totalBasketValue.toFixed(2).replace('.', ',')}</strong>
+                      </div>
+                      <button
+                        onClick={() => switchTab('list')}
+                        className="text-xs font-semibold text-[#497D00] hover:text-[#3A6400] flex items-center gap-1 transition"
+                      >
+                        Ver lista ({items.length}) <ChevronRight size={13} />
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Atalhos Rápidos Multimodais */}
+              <div className="grid grid-cols-2 gap-2.5">
+                <button
+                  onClick={() => {
+                    switchTab('chat');
+                    setIsRecordingAudio(true);
+                  }}
+                  className="bg-white hover:bg-neutral-50 hairline-border p-3.5 rounded-[20px] text-left shadow-card transition flex flex-col justify-between h-24 group"
+                >
+                  <div className="w-7 h-7 rounded-xl bg-[#F4FCE3] text-[#497D00] flex items-center justify-center group-hover:scale-105 transition">
+                    <Mic size={15} />
+                  </div>
+                  <div>
+                    <strong className="text-xs font-semibold text-neutral-900 block">
+                      Ditar por Voz
+                    </strong>
+                    <span className="text-[10px] text-neutral-500">
+                      Diga seus produtos
+                    </span>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setIsPhotoModalOpen(true)}
+                  className="bg-white hover:bg-neutral-50 hairline-border p-3.5 rounded-[20px] text-left shadow-card transition flex flex-col justify-between h-24 group"
+                >
+                  <div className="w-7 h-7 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center group-hover:scale-105 transition">
+                    <Camera size={15} />
+                  </div>
+                  <div>
+                    <strong className="text-xs font-semibold text-neutral-900 block">
+                      Escanear Lista
+                    </strong>
+                    <span className="text-[10px] text-neutral-500">
+                      Foto de papel ou nota
+                    </span>
+                  </div>
+                </button>
+              </div>
+
+              {/* Mercados Monitorados na Região */}
+              <div className="bg-white hairline-border p-4 rounded-[24px] shadow-card">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-500 font-semibold">
+                    MERCADOS EM {city.toUpperCase()}
+                  </span>
+                  <span className="text-[10px] text-[#497D00] font-medium flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#84E000]" />
+                    Ativos
+                  </span>
+                </div>
+
+                <div className="divide-y divide-neutral-100">
+                  {markets.slice(0, 4).map((m) => (
+                    <div key={m.marketId} className="flex items-center justify-between text-xs py-2">
+                      <div className="flex items-center gap-2.5">
+                        <div
+                          style={{ backgroundColor: m.logoColor }}
+                          className="w-6 h-6 rounded-lg text-white font-bold text-[10px] flex items-center justify-center shadow-xs"
+                        >
+                          {m.marketName[0]}
+                        </div>
+                        <span className="font-medium text-neutral-800">{m.marketName}</span>
+                      </div>
+                      <span className="text-[11px] font-mono font-medium text-[#497D00]">
+                        {items.length > 0 ? `R$ ${m.totalPrice.toFixed(2).replace('.', ',')}` : 'Online'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {markets.length > 4 && (
+                  <button
+                    onClick={() => switchTab('prices')}
+                    className="w-full pt-2.5 border-t border-neutral-100 text-center text-xs font-semibold text-[#497D00] hover:text-[#3A6400] flex items-center justify-center gap-1 transition"
+                  >
+                    Ver todas as {markets.length} redes de {city} <ChevronRight size={13} />
+                  </button>
+                )}
+              </div>
+
+            </div>
+          )}
+
+          {/* ========================================= */}
+          {/* TAB 2: CHAT IA (CONVERSA MULTIMODAL DE LUXO) */}
+          {/* ========================================= */}
+          {activeTab === 'chat' && (
+            <div className="flex flex-col space-y-3.5 animate-in fade-in duration-200">
+              
+              {/* Header do Chat */}
+              <div className="pt-1 pb-1 flex items-start justify-between">
+                <div>
+                  <p className="text-[10px] font-mono uppercase tracking-widest text-[#497D00] font-bold">
+                    ASSISTENTE IA
+                  </p>
+                  <h2 className="font-serif text-2xl font-bold text-neutral-900 tracking-tight">
+                    Lista Inteligente
+                  </h2>
+                  <p className="text-xs text-neutral-500 leading-relaxed mt-0.5">
+                    Cotações em <strong>{city}, {stateCode}</strong>. Dite, envie foto ou digite.
+                  </p>
+
+                  <div className="flex items-center gap-2 mt-2">
+                    <button
+                      type="button"
+                      onClick={() => detectCurrentLocation(true)}
+                      disabled={isDetectingGps}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium transition shadow-2xs border ${
+                        gpsLocation?.isGpsActive
+                          ? 'bg-[#F4FCE3] border-[#70BF00]/30 text-neutral-900 hover:bg-[#EBFBCE]'
+                          : 'bg-neutral-100 hover:bg-neutral-200 border-neutral-200 text-neutral-700'
+                      }`}
+                      title="Toque para atualizar sua localização via GPS"
+                    >
+                      {isDetectingGps ? (
+                        <>
+                          <div className="w-2.5 h-2.5 rounded-full border-2 border-[#497D00] border-t-transparent animate-spin" />
+                          <span className="text-[#497D00] font-medium">Buscando GPS...</span>
+                        </>
+                      ) : gpsLocation?.isGpsActive ? (
+                        <>
+                          <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#84E000] opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#497D00]"></span>
+                          </span>
+                          <span className="font-semibold text-neutral-900">
+                            📍 {gpsLocation.neighborhood ? `${gpsLocation.city} (${gpsLocation.neighborhood})` : gpsLocation.city}
+                          </span>
+                          <span className="text-[10px] text-[#497D00] font-semibold flex items-center gap-0.5 ml-0.5">
+                            <Navigation size={9} /> GPS Ativo
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <MapPin size={11} className="text-neutral-500" />
+                          <span>{city}, {stateCode}</span>
+                          <span className="text-[10px] text-[#497D00] font-bold underline underline-offset-2 ml-1">
+                            Ativar GPS Automático
+                          </span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {messages.length > 1 && (
+                  <button
+                    onClick={handleClearChat}
+                    className="text-[10px] text-neutral-500 hover:text-red-600 transition px-2.5 py-1 rounded-full hover:bg-red-50 hairline-border flex items-center gap-1 shrink-0 mt-1"
+                    title="Limpar histórico da conversa"
+                  >
+                    <RotateCcw size={10} />
+                    Limpar
+                  </button>
+                )}
+              </div>
+
+              {/* Thread de Mensagens */}
+              <div className="space-y-3 pt-1">
+                {messages.map((msg) => {
+                  if (msg.role === 'user') {
+                    return (
+                      <div key={msg.id} className="flex justify-end">
+                        <div className="max-w-[85%] bg-neutral-950 text-white rounded-[22px] rounded-tr-xs px-4 py-3 text-xs sm:text-[13px] font-normal leading-relaxed shadow-xs border border-neutral-800">
+                          {msg.text}
+                        </div>
+                      </div>
+                    );
+                  }
 
                   return (
-                    <div
-                      key={group.name}
-                      className="bg-[#14181D] border border-white/10 rounded-3xl overflow-hidden transition"
-                    >
-                      {/* Cabeçalho da Categoria com Imagem e Status */}
-                      <button
-                        onClick={() => setCollapsedCategories(prev => ({ ...prev, [group.name]: !isCollapsed }))}
-                        type="button"
-                        className="w-full p-3.5 flex items-center justify-between hover:bg-white/5 transition"
-                      >
-                        <div className="flex items-center gap-3.5">
-                          {/* Thumbnail da categoria */}
-                          <div className="w-12 h-12 rounded-2xl overflow-hidden relative shrink-0 border border-white/10 bg-neutral-900">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={group.image}
-                              alt={group.name}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-
-                          <div className="text-left">
-                            <span className="text-sm font-bold text-white block">
-                              {group.name}
-                            </span>
-                            <span className="text-[11px] text-neutral-400">
-                              {group.items.length} {group.items.length === 1 ? 'item' : 'itens'}
-                              {group.checkedCount > 0 && ` · ${group.checkedCount} no carrinho`}
-                            </span>
-                          </div>
+                    <div key={msg.id} className="flex flex-col space-y-2">
+                      <div className="flex items-start gap-2.5">
+                        <div className="w-7 h-7 rounded-xl overflow-hidden border border-black/10 shrink-0 shadow-xs mt-0.5 bg-white">
+                          <Image
+                            src="/logo.png"
+                            alt="Logo"
+                            width={28}
+                            height={28}
+                            className="w-full h-full object-contain"
+                          />
                         </div>
 
-                        <div className="flex items-center gap-2">
-                          {group.allChecked ? (
-                            <div className="w-6 h-6 rounded-full bg-[#84E000] text-neutral-950 flex items-center justify-center font-bold">
-                              <Check size={14} />
-                            </div>
-                          ) : (
-                            <div className="w-6 h-6 rounded-full border border-white/20 flex items-center justify-center text-neutral-500">
-                              <span className="text-[10px]">{group.checkedCount}/{group.items.length}</span>
-                            </div>
-                          )}
+                        <div className="flex-1 bg-white hairline-border rounded-[22px] rounded-tl-xs p-4 shadow-card text-xs sm:text-[13px] text-neutral-900 leading-relaxed">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <strong className="text-[9px] font-semibold text-neutral-400 font-mono uppercase tracking-wider">
+                              LIST.ME INTELLIGENCE
+                            </strong>
+                            <span className="text-[10px] font-mono text-neutral-400">
+                              {msg.timestamp}
+                            </span>
+                          </div>
+                          <FormattedChatMessage text={msg.text} />
 
-                          {isCollapsed ? (
-                            <ChevronDown size={18} className="text-neutral-400" />
-                          ) : (
-                            <ChevronUp size={18} className="text-neutral-400" />
-                          )}
-                        </div>
-                      </button>
+                          {msg.itemsFound && msg.itemsFound.length > 0 && (
+                            <div className="mt-3 pt-2.5 border-t border-neutral-100 space-y-2">
+                              <span className="text-[10px] font-semibold text-neutral-500 block uppercase tracking-wider font-mono">
+                                Cotações em {city}:
+                              </span>
 
-                      {/* Itens do Corredor */}
-                      {!isCollapsed && (
-                        <div className="border-t border-white/5 divide-y divide-white/5 px-3 py-1">
-                          {group.items.map((item) => (
-                            <div
-                              key={item.id}
-                              className="py-2.5 flex items-center justify-between gap-2"
-                            >
-                              {/* Checkbox + Nome */}
-                              <div
-                                onClick={() => handleToggleItem(item.id)}
-                                className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer select-none"
+                              <div className="space-y-1.5">
+                                {msg.itemsFound.map((item, i) => (
+                                  <div key={i} className="flex items-center justify-between text-xs py-1 border-b border-neutral-50 last:border-0">
+                                    <div className="truncate pr-2">
+                                      <span className="font-medium text-neutral-900 block truncate">
+                                        {item.name}
+                                      </span>
+                                      <span className="text-[10px] text-neutral-400">
+                                        {item.market}
+                                      </span>
+                                    </div>
+                                    <div className="text-right shrink-0">
+                                      <span className="font-semibold text-[#497D00] font-mono text-xs">
+                                        R$ {(item.price > 0 ? item.price : 12.90).toFixed(2).replace('.', ',')}
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+
+                              <button
+                                onClick={() => switchTab('list')}
+                                className="mt-2 text-xs font-semibold text-[#497D00] hover:text-[#3A6400] flex items-center gap-1 transition"
                               >
-                                <div
-                                  className={`w-5 h-5 rounded-lg border flex items-center justify-center shrink-0 transition ${
-                                    item.checked
-                                      ? 'bg-[#84E000] border-[#84E000] text-neutral-950'
-                                      : 'border-white/30 bg-white/5 text-transparent'
-                                  }`}
-                                >
-                                  <Check size={12} strokeWidth={3} />
-                                </div>
-                                <div className="truncate">
-                                  <span
-                                    className={`text-xs font-semibold block truncate ${
-                                      item.checked ? 'text-neutral-500 line-through' : 'text-neutral-200'
-                                    }`}
-                                  >
-                                    {item.name}
-                                  </span>
-                                  <span className="text-[10px] text-neutral-400 font-mono">
-                                    R$ {(item.basePrice || 0).toFixed(2).replace('.', ',')} / {item.unit}
-                                  </span>
-                                </div>
-                              </div>
-
-                              {/* Stepper e Ações */}
-                              <div className="flex items-center gap-2 shrink-0">
-                                <div className="flex items-center bg-white/5 rounded-xl border border-white/10 px-1 py-0.5">
-                                  <button
-                                    onClick={() => handleUpdateQuantity(item.id, -1)}
-                                    type="button"
-                                    className="p-1 text-neutral-400 hover:text-white"
-                                  >
-                                    <Minus size={12} />
-                                  </button>
-                                  <span className="text-xs font-bold font-mono px-2 text-white">
-                                    {item.quantity}
-                                  </span>
-                                  <button
-                                    onClick={() => handleUpdateQuantity(item.id, 1)}
-                                    type="button"
-                                    className="p-1 text-neutral-400 hover:text-white"
-                                  >
-                                    <Plus size={12} />
-                                  </button>
-                                </div>
-
-                                <button
-                                  onClick={() => handleDeleteItem(item.id)}
-                                  type="button"
-                                  className="p-1.5 text-neutral-500 hover:text-red-400 hover:bg-white/5 rounded-lg transition"
-                                >
-                                  <Trash2 size={14} />
-                                </button>
-                              </div>
+                                Ver lista ({items.length}) <ChevronRight size={13} />
+                              </button>
                             </div>
-                          ))}
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                <div ref={messagesEndRef} />
+              </div>
+
+            </div>
+          )}
+
+          {/* ========================================= */}
+          {/* TAB 3: LISTAS (GERENCIADOR ATIVO) */}
+          {/* ========================================= */}
+          {activeTab === 'list' && (
+            <div className="space-y-3.5 animate-in fade-in duration-200">
+              
+              <div className="flex items-center justify-between pt-1">
+                <div>
+                  <p className="text-[10px] font-mono uppercase tracking-widest text-[#497D00] font-bold">
+                    LISTA DA CASA
+                  </p>
+                  <h2 className="font-serif text-2xl font-bold text-neutral-900">
+                    Minha Lista
+                  </h2>
+                </div>
+
+                <button
+                  onClick={handleShareWhatsApp}
+                  className="px-3.5 py-1.5 bg-[#84E000] hover:bg-[#92F200] text-neutral-950 text-xs font-bold rounded-full shadow-xs flex items-center gap-1.5 transition duration-200"
+                >
+                  <Share2 size={12} />
+                  WhatsApp
+                </button>
+              </div>
+
+              {/* Alternador de Visualização: Rota de Mercado vs Lista Completa */}
+              {items.length > 0 && (
+                <div className="flex items-center gap-1 p-1 bg-white hairline-border rounded-2xl shadow-xs">
+                  <button
+                    onClick={() => setListViewMode('aisles')}
+                    className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                      listViewMode === 'aisles'
+                        ? 'bg-neutral-950 text-white shadow-xs'
+                        : 'text-neutral-600 hover:text-neutral-950'
+                    }`}
+                  >
+                    <Navigation size={12} className={listViewMode === 'aisles' ? 'text-[#84E000]' : ''} />
+                    <span>Rota de Mercado</span>
+                    {activeAislesCount > 0 && (
+                      <span className={`text-[9.5px] px-1.5 py-0.2 rounded-full font-mono ${
+                        listViewMode === 'aisles' ? 'bg-[#84E000] text-neutral-950' : 'bg-neutral-100 text-neutral-600'
+                      }`}>
+                        {activeAislesCount} {activeAislesCount === 1 ? 'corredor' : 'corredores'}
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setListViewMode('flat')}
+                    className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                      listViewMode === 'flat'
+                        ? 'bg-neutral-950 text-white shadow-xs'
+                        : 'text-neutral-600 hover:text-neutral-950'
+                    }`}
+                  >
+                    <CheckSquare size={12} />
+                    <span>Todos ({pendingItemsCount})</span>
+                  </button>
+                </div>
+              )}
+
+              {items.length === 0 ? (
+                <div className="bg-white hairline-border p-7 rounded-[28px] text-center shadow-card my-6">
+                  <div className="w-10 h-10 rounded-2xl bg-[#F4FCE3] text-[#497D00] flex items-center justify-center mx-auto mb-2.5">
+                    <CheckSquare size={19} />
+                  </div>
+                  <h3 className="font-serif text-base font-bold text-neutral-900 mb-1">
+                    Sua lista está limpa
+                  </h3>
+                  <p className="text-xs text-neutral-500 max-w-xs mx-auto mb-4 leading-relaxed">
+                    Dite, fotografe ou digite os produtos para calcular a melhor compra em {city}.
+                  </p>
+                  <button
+                    onClick={() => switchTab('chat')}
+                    className="py-2.5 px-5 bg-neutral-950 hover:bg-[#84E000] hover:text-neutral-950 text-white rounded-xl text-xs font-medium shadow-xs transition duration-200 inline-flex items-center gap-2"
+                  >
+                    <Plus size={13} /> Adicionar produtos
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="bg-white hairline-border p-4 rounded-[24px] shadow-card border-l-4 border-l-[#84E000]">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#84E000] animate-pulse" />
+                      <span className="text-[10px] font-mono uppercase tracking-wider text-[#497D00] font-bold">
+                        COMPRE TUDO NO {markets[0]?.marketName?.toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="flex items-baseline justify-between">
+                      <h3 className="text-base font-bold text-neutral-900">
+                        {markets[0]?.marketName}
+                      </h3>
+                      <span className="font-mono text-sm font-bold text-[#497D00]">
+                        R$ {totalBasketValue.toFixed(2).replace('.', ',')}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-neutral-500 mt-1">
+                      Compra completa otimizada. Você economiza <strong className="text-neutral-900">R$ {estimatedSavings.toFixed(2).replace('.', ',')}</strong> comprando todos os itens em um único mercado.
+                    </p>
+                  </div>
+
+                  {/* Guia Visual da Rota de Mercado */}
+                  {listViewMode === 'aisles' && activeAislesCount > 0 && (
+                    <div className="bg-[#F4FCE3]/90 border border-[#84E000]/35 rounded-2xl p-2.5 px-3 flex items-center justify-between text-xs shadow-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">🧭</span>
+                        <div>
+                          <span className="font-bold text-neutral-900 block text-[11px] leading-tight">
+                            Rota sequencial de corredores
+                          </span>
+                          <span className="text-[10px] text-[#497D00] font-semibold">
+                            Siga a ordem dos corredores para não precisar voltar pelo mercado!
+                          </span>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-mono font-bold text-neutral-700 bg-white/90 px-2.5 py-1 rounded-full border border-black/5 shadow-xs shrink-0">
+                        {completedItemsCount}/{items.length} pegos
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Aviso Inteligente na Lista */}
+                  {smartTip && (
+                    <div className="bg-white hairline-border rounded-[20px] p-3.5 shadow-card border-l-4 border-l-[#84E000] flex items-start gap-2.5">
+                      <Sparkles size={16} className="text-[#497D00] shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <span className="text-[10px] font-mono uppercase text-[#497D00] font-bold block mb-0.5">
+                          DICA DE COMPRA INTELIGENTE
+                        </span>
+                        <p className="text-xs text-neutral-700 leading-relaxed">
+                          {smartTip}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* RENDERIZAÇÃO DOS ITENS PENDENTES */}
+                  {listViewMode === 'aisles' ? (
+                    <div className="space-y-3">
+                      {aisleGroups
+                        .filter((group) => group.pendingItems.length > 0)
+                        .map((group) => (
+                          <div
+                            key={group.aisle.id}
+                            className="bg-white hairline-border rounded-[22px] p-3.5 shadow-card space-y-2.5 transition-all duration-200"
+                          >
+                            {/* Cabeçalho do Corredor */}
+                            <div className="flex items-center justify-between border-b border-black/[0.04] pb-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-lg leading-none">{group.aisle.emoji}</span>
+                                <div>
+                                  <div className="flex items-center gap-1.5">
+                                    <span className={`text-[8.5px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${group.aisle.badgeBg} ${group.aisle.badgeText}`}>
+                                      {group.aisle.corredorTitle.split(' · ')[0]}
+                                    </span>
+                                    <span className="text-[9.5px] text-neutral-400 font-mono">
+                                      {group.aisle.shortName}
+                                    </span>
+                                  </div>
+                                  <h3 className="text-xs font-bold text-neutral-900 leading-tight mt-0.5">
+                                    {group.aisle.name}
+                                  </h3>
+                                </div>
+                              </div>
+
+                              <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-600 shrink-0">
+                                {group.pendingItems.length} {group.pendingItems.length === 1 ? 'item' : 'itens'}
+                              </span>
+                            </div>
+
+                            {/* Lista de Produtos do Corredor */}
+                            <div className="space-y-1.5">
+                              {group.pendingItems.map((item) => (
+                                <div
+                                  key={item.id}
+                                  className="p-2.5 rounded-xl bg-neutral-50/70 hover:bg-neutral-50 border border-black/[0.03] flex items-center justify-between gap-2 transition"
+                                >
+                                  <label className="flex items-center gap-2.5 cursor-pointer flex-1 min-w-0">
+                                    <input
+                                      type="checkbox"
+                                      checked={item.checked}
+                                      onChange={() => toggleItemChecked(item.id)}
+                                      className="w-4 h-4 rounded accent-[#84E000] cursor-pointer shrink-0"
+                                    />
+                                    <div className="truncate">
+                                      <span className="text-xs font-semibold text-neutral-900 block truncate">
+                                        {item.matchedItem || item.name}
+                                      </span>
+                                      <span className="text-[10.5px] text-neutral-400 font-mono">
+                                        {item.bestMarket?.name} · R$ {item.bestMarket?.price.toFixed(2).replace('.', ',')}
+                                      </span>
+                                    </div>
+                                  </label>
+
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    <button
+                                      onClick={() => updateQuantity(item.id, -1)}
+                                      className="w-6 h-6 rounded-lg bg-white border border-black/10 hover:bg-neutral-100 text-neutral-700 text-xs flex items-center justify-center transition"
+                                      title="Diminuir quantidade"
+                                    >
+                                      <Minus size={11} />
+                                    </button>
+                                    <span className="w-5 text-center text-xs font-mono font-semibold text-neutral-900">
+                                      {item.quantity}
+                                    </span>
+                                    <button
+                                      onClick={() => updateQuantity(item.id, 1)}
+                                      className="w-6 h-6 rounded-lg bg-white border border-black/10 hover:bg-neutral-100 text-neutral-700 text-xs flex items-center justify-center transition"
+                                      title="Aumentar quantidade"
+                                    >
+                                      <Plus size={11} />
+                                    </button>
+                                    <button
+                                      onClick={() => deleteItem(item.id)}
+                                      className="p-1 text-neutral-400 hover:text-red-600 transition ml-0.5"
+                                      title="Remover produto"
+                                    >
+                                      <Trash2 size={12} />
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+
+                      {/* Notificação de Corredores Concluídos */}
+                      {completedAislesCount > 0 && (
+                        <div className="p-2.5 rounded-2xl bg-emerald-50/70 border border-emerald-200/80 text-[11px] text-emerald-800 flex items-center gap-2 shadow-xs">
+                          <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />
+                          <span>
+                            <strong>{completedAislesCount} {completedAislesCount === 1 ? 'corredor concluído' : 'corredores concluídos'}</strong> nesta compra!
+                          </span>
                         </div>
                       )}
                     </div>
-                  );
-                })
+                  ) : (
+                    /* Modo Lista Plana */
+                    <div className="space-y-2">
+                      <h4 className="text-[11px] font-mono font-semibold uppercase tracking-wider text-neutral-400">
+                        Pendentes ({pendingItemsCount})
+                      </h4>
+
+                      {items
+                        .filter((item) => !item.checked)
+                        .map((item) => (
+                          <div
+                            key={item.id}
+                            className="bg-white hairline-border p-3.5 rounded-[20px] shadow-card flex items-center justify-between gap-2"
+                          >
+                            <label className="flex items-center gap-3 cursor-pointer flex-1 min-w-0">
+                              <input
+                                type="checkbox"
+                                checked={item.checked}
+                                onChange={() => toggleItemChecked(item.id)}
+                                className="w-4 h-4 rounded accent-[#84E000] cursor-pointer"
+                              />
+                              <div className="truncate">
+                                <span className="text-xs font-semibold text-neutral-900 block truncate">
+                                  {item.matchedItem || item.name}
+                                </span>
+                                <span className="text-[11px] text-neutral-400 font-mono">
+                                  {item.bestMarket?.name} · R$ {item.bestMarket?.price.toFixed(2).replace('.', ',')}
+                                </span>
+                              </div>
+                            </label>
+
+                            <div className="flex items-center gap-1 shrink-0">
+                              <button
+                                onClick={() => updateQuantity(item.id, -1)}
+                                className="w-6 h-6 rounded-lg bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-xs flex items-center justify-center transition"
+                              >
+                                <Minus size={11} />
+                              </button>
+                              <span className="w-5 text-center text-xs font-mono font-semibold text-neutral-900">
+                                {item.quantity}
+                              </span>
+                              <button
+                                onClick={() => updateQuantity(item.id, 1)}
+                                className="w-6 h-6 rounded-lg bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-xs flex items-center justify-center transition"
+                              >
+                                <Plus size={11} />
+                              </button>
+                              <button
+                                onClick={() => deleteItem(item.id)}
+                                className="p-1 text-neutral-400 hover:text-red-600 transition ml-1"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+
+                  {completedItemsCount > 0 && (
+                    <div className="space-y-2 pt-2">
+                      <h4 className="text-[11px] font-mono font-semibold uppercase tracking-wider text-neutral-400">
+                        Comprados ({completedItemsCount})
+                      </h4>
+
+                      {items
+                        .filter((item) => item.checked)
+                        .map((item) => (
+                          <div
+                            key={item.id}
+                            className="bg-neutral-50 hairline-border p-3 rounded-[18px] flex items-center justify-between gap-2 opacity-60"
+                          >
+                            <label className="flex items-center gap-3 cursor-pointer flex-1 min-w-0">
+                              <input
+                                type="checkbox"
+                                checked={item.checked}
+                                onChange={() => toggleItemChecked(item.id)}
+                                className="w-4 h-4 rounded accent-[#84E000] cursor-pointer"
+                              />
+                              <div className="truncate">
+                                <span className="text-xs font-medium text-neutral-900 line-through block truncate">
+                                  {item.matchedItem || item.name}
+                                </span>
+                                <span className="text-[11px] text-neutral-400 font-mono">
+                                  {item.bestMarket?.name} · R$ {item.bestMarket?.price.toFixed(2).replace('.', ',')}
+                                </span>
+                              </div>
+                            </label>
+
+                            <button
+                              onClick={() => deleteItem(item.id)}
+                              className="p-1 text-neutral-400 hover:text-red-600 transition"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+
+                  <button
+                    onClick={() => switchTab('chat')}
+                    className="w-full py-3 bg-white hover:bg-neutral-50 hairline-border rounded-[20px] text-xs font-semibold text-neutral-800 flex items-center justify-center gap-2 shadow-xs transition"
+                  >
+                    <Sparkles size={13} className="text-[#497D00]" />
+                    Adicionar mais produtos com IA
+                  </button>
+                </>
               )}
+
             </div>
+          )}
 
-            {/* Botão Fixo da Base: Comparar Mercados */}
-            <div className="mt-auto pt-2">
-              <button
-                onClick={() => switchTab('prices')}
-                type="button"
-                className="w-full py-4 px-6 bg-[#84E000] hover:bg-[#92F200] text-neutral-950 rounded-2xl font-bold text-sm shadow-xl shadow-[#84e000]/20 flex items-center justify-center gap-2 transition"
-              >
-                <Tag size={18} />
-                <span>Comparar mercados</span>
-              </button>
-            </div>
-
-          </div>
-        )}
-
-        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            TELA 3: PREÇOS — COMPARATIVO DE MERCADOS
-            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-        {activeTab === 'prices' && (
-          <div className="flex-1 flex flex-col px-5 pt-5 pb-6 animate-in fade-in duration-200">
-            
-            {/* Header */}
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h1 className="text-2xl font-extrabold tracking-tight text-white mb-0.5">
-                  Melhor custo-benefício
-                </h1>
-                <p className="text-xs text-neutral-400 font-medium">
-                  Encontramos os menores preços para a sua lista
+          {/* ========================================= */}
+          {/* TAB 4: GASTOS & COMPARATIVO REAL */}
+          {/* ========================================= */}
+          {activeTab === 'expenses' && (
+            <div className="space-y-3.5 animate-in fade-in duration-200">
+              
+              <div className="pt-1">
+                <p className="text-[10px] font-mono uppercase tracking-widest text-[#497D00] font-bold">
+                  GASTOS & ECONOMIA REAL
+                </p>
+                <h2 className="font-serif text-2xl font-bold text-neutral-900">
+                  Controle de Compras
+                </h2>
+                <p className="text-xs text-neutral-500">
+                  Compare o gasto real no caixa com a estimativa do app.
                 </p>
               </div>
-            </div>
 
-            {/* Filtro: Mais Barato vs Mais Próximo */}
-            <div className="flex items-center gap-2 p-1 bg-[#14181D] border border-white/10 rounded-2xl mb-5">
-              <button
-                onClick={() => setPriceSortMode('cheapest')}
-                type="button"
-                className={`flex-1 py-2 text-xs font-bold rounded-xl transition ${
-                  priceSortMode === 'cheapest'
-                    ? 'bg-[#84E000] text-neutral-950 shadow-md'
-                    : 'text-neutral-400 hover:text-white'
-                }`}
-              >
-                Mais barato
-              </button>
-              <button
-                onClick={() => setPriceSortMode('closest')}
-                type="button"
-                className={`flex-1 py-2 text-xs font-bold rounded-xl transition ${
-                  priceSortMode === 'closest'
-                    ? 'bg-[#84E000] text-neutral-950 shadow-md'
-                    : 'text-neutral-400 hover:text-white'
-                }`}
-              >
-                Mais próximo
-              </button>
-            </div>
+              {/* Card de Resumo Geral Acumulado (se houver compras) */}
+              {expenses.length > 0 && (
+                <div className="bg-neutral-950 text-white p-4 rounded-[24px] shadow-floating border-2 border-[#84E000]/40 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono uppercase text-[#84E000] font-bold flex items-center gap-1.5">
+                      <Sparkles size={12} className="text-[#84E000]" />
+                      BALANÇO GERAL DE COMPRAS
+                    </span>
+                    <span className="text-[10px] font-mono text-neutral-400">
+                      {expenses.length} {expenses.length === 1 ? 'compra registrada' : 'compras registradas'}
+                    </span>
+                  </div>
 
-            {/* Card Vencedor Destaque: 👑 MELHOR ESCOLHA */}
-            {bestMarket && (
-              <div className="bg-[#14181D] border-2 border-[#84E000] rounded-3xl p-5 mb-4 shadow-xl shadow-[#84e000]/10 relative overflow-hidden">
-                <div className="flex items-center justify-between mb-4">
-                  <span className="px-3 py-1 bg-[#84E000] text-neutral-950 font-extrabold text-[11px] rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-md">
-                    <span>👑</span>
-                    <span>MELHOR ESCOLHA</span>
-                  </span>
-
-                  <span className="text-[11px] font-mono text-[#84E000] font-bold">
-                    {bestMarket.coveredItems}/{bestMarket.totalItems} itens
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between gap-4 mb-3">
-                  <div className="flex items-center gap-3">
-                    <MarketLogo name={bestMarket.marketName} className="w-12 h-12" />
+                  <div className="grid grid-cols-2 gap-3 pt-1 border-t border-neutral-800">
                     <div>
-                      <h2 className="text-lg font-bold text-white leading-tight">
-                        {bestMarket.marketName}
-                      </h2>
-                      <p className="text-[11px] text-neutral-400 flex items-center gap-1 mt-0.5">
-                        <MapPin size={12} className="text-[#84E000]" />
-                        <span>{bestMarket.distance}</span>
-                        <span>· 🚗 ~8 min</span>
-                      </p>
+                      <span className="text-[10px] text-neutral-400 font-mono block">Total Pago no Caixa</span>
+                      <span className="font-serif text-xl sm:text-2xl font-bold text-white">
+                        R$ {totalSpentReal.toFixed(2).replace('.', ',')}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-neutral-400 font-mono block">Estimativa do App</span>
+                      <span className="font-serif text-xl sm:text-2xl font-bold text-neutral-300">
+                        R$ {totalEstimatedApp.toFixed(2).replace('.', ',')}
+                      </span>
                     </div>
                   </div>
 
-                  <div className="text-right">
-                    <span className="text-xl font-extrabold text-white font-mono block">
-                      R$ {bestMarket.totalPrice.toFixed(2).replace('.', ',')}
+                  {totalRealEconomy !== 0 && (
+                    <div className={`mt-2 p-2 rounded-xl text-xs flex items-center justify-between font-mono ${
+                      totalRealEconomy > 0 
+                        ? 'bg-[#84E000]/15 text-[#84E000] font-bold' 
+                        : 'bg-amber-500/10 text-amber-300'
+                    }`}>
+                      <span>{totalRealEconomy > 0 ? 'Economia extra acumulada:' : 'Variação total acumulada:'}</span>
+                      <span>{totalRealEconomy > 0 ? `+R$ ${totalRealEconomy.toFixed(2).replace('.', ',')}` : `-R$ ${Math.abs(totalRealEconomy).toFixed(2).replace('.', ',')}`}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Banner de Compra Concluída / Estimativa Atual */}
+              {(lastEstimatedTotal > 0 || (items.length > 0 && totalBasketValue > 0)) && (
+                <div className="bg-[#84E000]/10 border border-[#84E000]/30 rounded-[24px] p-4 shadow-card">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] font-mono uppercase text-[#386000] font-bold flex items-center gap-1.5">
+                      <Receipt size={12} className="text-[#497D00]" />
+                      ESTIMATIVA LIST.ME PARA ESTA COMPRA
                     </span>
-                    <span className="text-[10px] text-neutral-400">Total da lista</span>
+                    <span className="text-[9px] font-mono uppercase bg-[#84E000] text-neutral-950 font-bold px-2 py-0.5 rounded-md">
+                      Meta da Compra
+                    </span>
+                  </div>
+
+                  <div className="flex items-baseline justify-between mt-1">
+                    <div>
+                      <span className="font-serif text-2xl font-bold text-neutral-900">
+                        R$ {(lastEstimatedTotal || totalBasketValue).toFixed(2).replace('.', ',')}
+                      </span>
+                      <span className="text-[11px] text-neutral-500 block mt-0.5">
+                        Cálculo para {items.length} {items.length === 1 ? 'item' : 'itens'} no {newExpenseMarket || markets[0]?.marketName || 'mercado recomendado'}
+                      </span>
+                    </div>
+
+                    <div className="text-right">
+                      <span className="text-[10px] font-mono uppercase text-neutral-400 block font-medium">
+                        Mais Barato
+                      </span>
+                      <span className="text-xs font-bold text-neutral-800 bg-white px-2.5 py-1 rounded-lg inline-block mt-1 hairline-border shadow-xs">
+                        {newExpenseMarket || markets[0]?.marketName}
+                      </span>
+                    </div>
                   </div>
                 </div>
+              )}
 
-                {bestMarket.savings > 0 && (
-                  <div className="pt-3 border-t border-white/10 flex items-center justify-between">
-                    <span className="text-xs text-neutral-300">
-                      Economia frente ao mais caro:
-                    </span>
-                    <span className="px-2.5 py-1 bg-[#84E000]/15 border border-[#84E000]/30 text-[#84E000] font-bold text-xs rounded-xl">
-                      Economize R$ {bestMarket.savings.toFixed(2).replace('.', ',')}
-                    </span>
+              {/* Form: Lançar Compra Realizada */}
+              <div className="bg-white hairline-border p-4 sm:p-5 rounded-[24px] shadow-card">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-[11px] font-mono uppercase tracking-wider text-neutral-700 font-bold flex items-center gap-1.5">
+                    <CheckCheck size={13} className="text-[#497D00]" />
+                    Lançar Compra Realizada
+                  </h3>
+                  <span className="text-[10px] text-neutral-400 font-mono">
+                    Após passar no caixa
+                  </span>
+                </div>
+
+                <form onSubmit={handleAddExpense} className="space-y-2.5">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] font-mono uppercase text-neutral-400 block mb-1 font-medium">
+                        Supermercado
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ex: Atacadão"
+                        value={newExpenseMarket}
+                        onChange={(e) => setNewExpenseMarket(e.target.value)}
+                        className="w-full px-3 py-2 bg-neutral-50 hairline-border rounded-xl text-xs text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#84E000]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-mono uppercase text-neutral-400 block mb-1 font-medium">
+                        Total Pago (R$)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ex: 149,90"
+                        value={newExpenseValue}
+                        onChange={(e) => setNewExpenseValue(e.target.value)}
+                        className="w-full px-3 py-2 bg-neutral-50 hairline-border rounded-xl text-xs text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#84E000] font-mono font-semibold"
+                      />
+                    </div>
                   </div>
+
+                  {/* Campo de Observação */}
+                  <div>
+                    <label className="text-[10px] font-mono uppercase text-neutral-400 block mb-1 font-medium flex items-center justify-between">
+                      <span>Observação (opcional)</span>
+                      <span className="text-[9px] text-neutral-400 lowercase">anote itens extras, promoções, etc.</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ex: peguei produtos extras, marcas diferentes, aproveitei promoção..."
+                      value={newExpenseNotes}
+                      onChange={(e) => setNewExpenseNotes(e.target.value)}
+                      className="w-full px-3 py-2 bg-neutral-50 hairline-border rounded-xl text-xs text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#84E000]"
+                    />
+                  </div>
+
+                  {/* Comparativo em Tempo Real enquanto o usuário digita */}
+                  {(() => {
+                    const paidNum = parseFloat(newExpenseValue.replace(',', '.'));
+                    const targetEst = lastEstimatedTotal || totalBasketValue;
+                    if (!isNaN(paidNum) && paidNum > 0 && targetEst > 0) {
+                      const diff = Number((paidNum - targetEst).toFixed(2));
+                      const isUnder = diff < 0;
+                      const isExact = diff === 0;
+                      return (
+                        <div className={`p-2.5 rounded-xl text-xs flex items-center justify-between border animate-in fade-in duration-200 ${
+                          isUnder
+                            ? 'bg-[#84E000]/15 border-[#84E000]/40 text-[#2B4B00]'
+                            : isExact
+                            ? 'bg-neutral-100 border-neutral-200 text-neutral-800'
+                            : 'bg-amber-50 border-amber-200 text-amber-900'
+                        }`}>
+                          <span className="font-semibold text-[11px] flex items-center gap-1.5">
+                            {isUnder ? '🎉 Economizou além do previsto:' : isExact ? '🎯 Na meta exata prevista pelo app:' : '⚠️ Acima da estimativa calculada:'}
+                          </span>
+                          <span className="font-mono font-bold text-xs">
+                            {isUnder ? `-R$ ${Math.abs(diff).toFixed(2).replace('.', ',')}` : isExact ? 'R$ 0,00' : `+R$ ${diff.toFixed(2).replace('.', ',')}`}
+                          </span>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+
+                  <button
+                    type="submit"
+                    className="w-full py-2.5 bg-neutral-950 hover:bg-[#84E000] hover:text-neutral-950 text-white rounded-xl text-xs font-bold shadow-xs transition duration-200 mt-1 flex items-center justify-center gap-2"
+                  >
+                    <span>Salvar Compra & Comparar</span>
+                  </button>
+                </form>
+              </div>
+
+              {/* Purchase History with Real vs Estimated Comparison */}
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-[11px] font-mono font-semibold uppercase tracking-wider text-neutral-400">
+                    Compras Registradas ({expenses.length})
+                  </h4>
+                  {expenses.length > 0 && (
+                    <span className="text-[10px] font-mono text-neutral-400">
+                      Real vs. Estimado
+                    </span>
+                  )}
+                </div>
+
+                {expenses.length === 0 ? (
+                  <div className="bg-white hairline-border p-6 rounded-[22px] text-center text-xs text-neutral-500 shadow-card space-y-1">
+                    <p className="font-semibold text-neutral-700">Nenhuma compra finalizada ainda.</p>
+                    <p className="text-[11px] text-neutral-400">
+                      Ao marcar todos os itens na aba de Listas, você será redirecionado para cá para registrar o valor pago e comparar com a estimativa do app.
+                    </p>
+                  </div>
+                ) : (
+                  expenses.map((exp) => {
+                    const hasEstimate = typeof exp.estimatedTotal === 'number' && exp.estimatedTotal > 0;
+                    const diff = hasEstimate ? Number((exp.totalPaid - exp.estimatedTotal!).toFixed(2)) : 0;
+                    const isUnder = diff < 0;
+                    const isExact = diff === 0;
+                    const isOver = diff > 0;
+
+                    return (
+                      <div
+                        key={exp.id}
+                        className="bg-white hairline-border p-4 rounded-[22px] shadow-card space-y-2.5"
+                      >
+                        {/* Linha Topo: Mercado, Data e Botão Excluir */}
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <strong className="text-xs sm:text-sm font-bold text-neutral-900 block">
+                              {exp.marketName}
+                            </strong>
+                            <span className="text-[11px] text-neutral-400 font-mono">
+                              {exp.date} · {exp.itemsCount} {exp.itemsCount === 1 ? 'produto' : 'produtos'}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <div className="text-right">
+                              <span className="text-[9px] font-mono uppercase text-neutral-400 block font-semibold">
+                                Pago no Caixa
+                              </span>
+                              <span className="font-mono text-xs sm:text-sm font-bold text-neutral-900">
+                                R$ {exp.totalPaid.toFixed(2).replace('.', ',')}
+                              </span>
+                            </div>
+
+                            <button
+                              onClick={() => handleDeleteExpense(exp.id)}
+                              className="p-1.5 text-neutral-300 hover:text-red-500 rounded-lg hover:bg-red-50 transition"
+                              title="Remover esta compra"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Observação (se houver) */}
+                        {exp.notes && (
+                          <div className="bg-neutral-50 px-3 py-2 rounded-xl text-xs text-neutral-700 flex items-start gap-2 hairline-border">
+                            <FileText size={12} className="text-[#497D00] shrink-0 mt-0.5" />
+                            <p className="italic text-neutral-600 leading-snug">
+                              &ldquo;{exp.notes}&rdquo;
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Comparativo Detalhado: Estimativa do App vs Real */}
+                        {hasEstimate ? (
+                          <div className="pt-2 border-t border-black/[0.04] grid grid-cols-3 gap-2 text-center">
+                            <div className="bg-[#F8F7F4] p-2 rounded-xl">
+                              <span className="text-[9px] font-mono uppercase text-neutral-400 block font-semibold">
+                                Estimativa App
+                              </span>
+                              <span className="font-mono text-xs font-bold text-neutral-700">
+                                R$ {exp.estimatedTotal!.toFixed(2).replace('.', ',')}
+                              </span>
+                            </div>
+
+                            <div className="bg-[#F8F7F4] p-2 rounded-xl">
+                              <span className="text-[9px] font-mono uppercase text-neutral-400 block font-semibold">
+                                Gasto Real
+                              </span>
+                              <span className="font-mono text-xs font-bold text-neutral-900">
+                                R$ {exp.totalPaid.toFixed(2).replace('.', ',')}
+                              </span>
+                            </div>
+
+                            <div className={`p-2 rounded-xl ${
+                              isUnder
+                                ? 'bg-[#84E000]/15 text-[#345900]'
+                                : isExact
+                                ? 'bg-neutral-100 text-neutral-800'
+                                : 'bg-amber-50 text-amber-800'
+                            }`}>
+                              <span className="text-[9px] font-mono uppercase block font-bold">
+                                {isUnder ? 'Economizou +' : isExact ? 'Na Meta' : 'Diferença'}
+                              </span>
+                              <span className="font-mono text-xs font-bold">
+                                {isUnder && `-R$ ${Math.abs(diff).toFixed(2).replace('.', ',')}`}
+                                {isExact && 'R$ 0,00'}
+                                {isOver && `+R$ ${diff.toFixed(2).replace('.', ',')}`}
+                              </span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="pt-1.5 border-t border-black/[0.04] flex items-center justify-between text-[11px] text-[#497D00] font-mono">
+                            <span>Economia média estimada:</span>
+                            <span className="font-bold">R$ {exp.estimatedEconomy.toFixed(2).replace('.', ',')}</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
                 )}
               </div>
-            )}
 
-            {/* Outros Mercados Comparados */}
-            <div className="space-y-3 mb-6">
-              <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider block">
-                Outros mercados comparados
-              </span>
+            </div>
+          )}
 
-              {sortedMarkets
-                .filter(m => m.marketName !== bestMarket?.marketName)
-                .map((market) => {
-                  const diff = market.totalPrice - (bestMarket?.totalPrice || 0);
+          {/* ========================================= */}
+          {/* TAB 5: PREÇOS */}
+          {/* ========================================= */}
+          {activeTab === 'prices' && (
+            <div className="space-y-3.5 animate-in fade-in duration-200">
+              
+              <div className="flex items-start justify-between pt-1">
+                <div>
+                  <p className="text-[10px] font-mono uppercase tracking-widest text-[#497D00] font-bold">
+                    COMPARATIVO
+                  </p>
+                  <h2 className="font-serif text-2xl font-bold text-neutral-900">
+                    Mercados em {city}
+                  </h2>
+                  <p className="text-xs text-neutral-500">
+                    Onde sua compra completa sai mais barata.
+                  </p>
+                </div>
 
-                  return (
-                    <div
-                      key={market.marketId}
-                      className="bg-[#14181D] border border-white/10 rounded-2xl p-4 flex items-center justify-between gap-3 hover:bg-white/5 transition"
-                    >
+                <button
+                  onClick={handleAddCustomMarket}
+                  className="px-2.5 py-1.5 bg-white hover:bg-neutral-100 text-neutral-800 text-[11px] font-medium rounded-xl hairline-border shadow-xs transition shrink-0 flex items-center gap-1 mt-1"
+                  title="Adicionar outro mercado da sua rua ou bairro"
+                >
+                  <Plus size={11} className="text-[#497D00]" />
+                  Novo Mercado
+                </button>
+              </div>
+
+              {/* Aviso Inteligente nos Preços */}
+              {smartTip && (
+                <div className="bg-[#84E000]/10 border border-[#84E000]/40 rounded-[20px] p-3.5 text-xs text-neutral-800">
+                  <strong className="text-[10px] font-mono uppercase text-[#386000] font-bold block mb-1">
+                    💡 ANÁLISE DE CUSTO-BENEFÍCIO:
+                  </strong>
+                  {smartTip}
+                </div>
+              )}
+
+              {/* Markets Ranking */}
+              <div className="space-y-2.5">
+                {markets.map((m, index) => (
+                  <div
+                    key={m.marketId}
+                    className={`p-4 rounded-[24px] hairline-border shadow-card transition ${
+                      m.isBestValue && items.length > 0
+                        ? 'bg-white ring-2 ring-[#84E000] border-transparent shadow-xs'
+                        : 'bg-white'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
-                        <MarketLogo name={market.marketName} className="w-10 h-10" />
+                        <div
+                          style={{ backgroundColor: m.logoColor }}
+                          className="w-9 h-9 rounded-2xl text-white font-bold text-xs flex items-center justify-center shadow-xs"
+                        >
+                          {m.marketName[0]}
+                        </div>
                         <div>
-                          <strong className="text-sm font-bold text-white block">
-                            {market.marketName}
-                          </strong>
-                          <span className="text-[11px] text-neutral-400 flex items-center gap-1">
-                            <MapPin size={12} />
-                            <span>{market.distance}</span>
+                          <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                            {m.isBestValue && items.length > 0 && (
+                              <span className="text-[9px] font-mono uppercase tracking-wider text-neutral-950 bg-[#84E000] px-2 py-0.5 rounded font-bold inline-block">
+                                ★ MENOR CUSTO TOTAL
+                              </span>
+                            )}
+                            {m.marketType && (
+                              <span className={`text-[9px] font-mono uppercase px-1.5 py-0.5 rounded font-bold ${
+                                m.marketType === 'atacadista'
+                                  ? 'bg-neutral-900 text-[#84E000]'
+                                  : 'bg-neutral-100 text-neutral-600'
+                              }`}>
+                                {m.marketType === 'atacadista' ? 'Atacarejo' : 'Supermercado'}
+                              </span>
+                            )}
+                            {m.distance && (
+                              <span className="text-[10px] font-mono text-neutral-500 font-medium">
+                                · {m.distance}
+                              </span>
+                            )}
+                          </div>
+                          <h3 className="text-xs sm:text-sm font-bold text-neutral-900">
+                            {m.marketName}
+                          </h3>
+                          <span className="text-[11px] text-neutral-400">
+                            {items.length > 0 ? `${m.coveredItems} de ${m.totalItems} itens cotados` : 'Rede monitorada'}
                           </span>
                         </div>
                       </div>
 
                       <div className="text-right">
-                        <span className="text-sm font-bold text-neutral-200 font-mono block">
-                          R$ {market.totalPrice.toFixed(2).replace('.', ',')}
-                        </span>
-                        {diff > 0 && (
-                          <span className="text-[11px] font-semibold text-red-400">
-                            +R$ {diff.toFixed(2).replace('.', ',')}
+                        {items.length > 0 ? (
+                          <>
+                            <span className="font-mono text-xs sm:text-sm font-bold text-neutral-900 block">
+                              R$ {m.totalPrice.toFixed(2).replace('.', ',')}
+                            </span>
+                            {m.savings > 0 && (
+                              <span className="text-[10px] font-mono text-[#497D00] font-bold">
+                                Economia de R$ {m.savings.toFixed(2).replace('.', ',')}
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-[11px] font-mono text-[#497D00] font-bold">
+                            Ativo
                           </span>
                         )}
                       </div>
                     </div>
-                  );
-                })}
-            </div>
-
-            {/* Botões de Ação na Base */}
-            <div className="mt-auto pt-2 grid grid-cols-2 gap-3">
-              <button
-                onClick={() => {
-                  const q = encodeURIComponent(`${bestMarket?.marketName || 'Atacadão'} ${city}`);
-                  window.open(`https://www.google.com/maps/search/?api=1&query=${q}`, '_blank');
-                }}
-                type="button"
-                className="py-3.5 px-4 bg-[#84E000] hover:bg-[#92F200] text-neutral-950 rounded-2xl font-bold text-xs shadow-xl shadow-[#84e000]/20 flex items-center justify-center gap-2 transition"
-              >
-                <Navigation size={16} />
-                <span>Ver rota</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  const text = formatListByAisleForWhatsApp(
-                    items,
-                    bestMarket?.marketName || 'Atacadão',
-                    bestMarket?.totalPrice || totalListValue,
-                    city
-                  );
-                  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-                }}
-                type="button"
-                className="py-3.5 px-4 bg-white/10 hover:bg-white/15 border border-white/10 text-white rounded-2xl font-bold text-xs flex items-center justify-center gap-2 transition"
-              >
-                <Share2 size={16} className="text-[#84E000]" />
-                <span>WhatsApp</span>
-              </button>
-            </div>
-
-          </div>
-        )}
-
-        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            TELA 4: PERFIL & ECONOMIA — DASHBOARD
-            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-        {activeTab === 'profile' && (
-          <div className="flex-1 flex flex-col px-5 pt-5 pb-6 animate-in fade-in duration-200">
-            
-            {/* Header */}
-            <div className="flex items-center justify-between mb-5">
-              <div>
-                <h1 className="text-2xl font-extrabold tracking-tight text-white mb-0.5">
-                  Sua economia
-                </h1>
-                <p className="text-xs text-neutral-400 font-medium">
-                  Compras mais inteligentes, mais vida para você.
-                </p>
+                  </div>
+                ))}
               </div>
 
-              <button
-                onClick={() => setIsMenuOpen(true)}
-                type="button"
-                className="w-9 h-9 rounded-full bg-[#14181D] border border-white/10 flex items-center justify-center text-neutral-300 hover:text-white"
-              >
-                <Settings size={18} />
-              </button>
-            </div>
+              {/* Preços detalhados por produto */}
+              {items.length > 0 && (
+                <div className="bg-white hairline-border p-4 rounded-[24px] shadow-card">
+                  <h4 className="text-[11px] font-mono font-semibold uppercase tracking-wider text-neutral-400 mb-3">
+                    Melhor Preço por Produto na Sua Lista
+                  </h4>
 
-            {/* Card Destaque de Economia com Gráfico Semanal em SVG */}
-            <div className="bg-[#14181D] border border-white/10 rounded-3xl p-5 mb-5 shadow-xl relative overflow-hidden">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-2xl bg-[#84E000]/15 border border-[#84E000]/30 flex items-center justify-center text-[#84E000]">
-                    <TrendingUp size={18} />
-                  </div>
-                  <div>
-                    <span className="text-2xl font-extrabold text-[#84E000] font-mono block leading-none">
-                      R$ {totalEconomizedMonth.toFixed(2).replace('.', ',')}
-                    </span>
-                    <span className="text-[11px] text-neutral-400 mt-0.5 block">
-                      economizados este mês
-                    </span>
+                  <div className="divide-y divide-neutral-100">
+                    {items.map((item) => (
+                      <div key={item.id} className="py-2.5 flex items-center justify-between text-xs">
+                        <div>
+                          <span className="font-medium text-neutral-900 block">
+                            {item.name}
+                          </span>
+                          <span className="text-[11px] text-neutral-400">
+                            {item.bestMarket?.name}
+                          </span>
+                        </div>
+
+                        <div className="text-right">
+                          <span className="font-mono font-bold text-[#497D00] block">
+                            R$ {item.bestMarket?.price.toFixed(2).replace('.', ',')}
+                          </span>
+                          <span className="text-[10px] text-neutral-400">
+                            por {item.unit}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
+              )}
 
-                <span className="px-2.5 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-mono text-neutral-300">
-                  +24.8% vs mês passado
-                </span>
-              </div>
+            </div>
+          )}
 
-              {/* Gráfico Semanal SVG Dinâmico */}
-              <div className="pt-2">
-                <div className="h-32 w-full relative flex items-end">
-                  <svg className="w-full h-full overflow-visible" viewBox="0 0 320 100" preserveAspectRatio="none">
-                    <defs>
-                      <linearGradient id="neonGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#84E000" stopOpacity="0.35" />
-                        <stop offset="100%" stopColor="#84E000" stopOpacity="0.0" />
-                      </linearGradient>
-                    </defs>
-                    
-                    {/* Linhas de grade horizontais sutis */}
-                    <line x1="0" y1="25" x2="320" y2="25" stroke="rgba(255,255,255,0.05)" strokeDasharray="3 3" />
-                    <line x1="0" y1="60" x2="320" y2="60" stroke="rgba(255,255,255,0.05)" strokeDasharray="3 3" />
+        </main>
 
-                    {/* Área Preenchida com Gradiente */}
-                    <path
-                      d="M 10 85 Q 80 50, 130 65 T 230 35 T 310 15 L 310 100 L 10 100 Z"
-                      fill="url(#neonGradient)"
+        {/* 3. Composer Flutuante — Design Minimalista Premium */}
+        {activeTab === 'chat' && (
+          <div className="absolute bottom-16 left-0 right-0 px-3 pb-2 pt-3 z-30 bg-gradient-to-t from-[#F8F7F4] via-[#F8F7F4] to-transparent">
+            {isRecordingAudio ? (
+              <AudioRecorder
+                onAudioCaptured={(transcript) => {
+                  setIsRecordingAudio(false);
+                  handleProcessUserText(transcript);
+                }}
+                onCancel={() => setIsRecordingAudio(false)}
+              />
+            ) : (
+              <>
+                <div className="flex items-center justify-between px-3 mb-1 text-[10px] sm:text-[11px] text-neutral-500">
+                  <div className="flex items-center gap-1.5 truncate">
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                        gpsLocation?.isGpsActive ? 'bg-[#84E000] animate-pulse' : 'bg-neutral-400'
+                      }`}
                     />
-
-                    {/* Linha Curva em Verde Neon */}
-                    <path
-                      d="M 10 85 Q 80 50, 130 65 T 230 35 T 310 15"
-                      fill="none"
-                      stroke="#84E000"
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                    />
-
-                    {/* Pontos de Destaque nas Semanas */}
-                    <circle cx="10" cy="85" r="4" fill="#0B0E11" stroke="#84E000" strokeWidth="2.5" />
-                    <circle cx="110" cy="60" r="4" fill="#0B0E11" stroke="#84E000" strokeWidth="2.5" />
-                    <circle cx="210" cy="40" r="4" fill="#0B0E11" stroke="#84E000" strokeWidth="2.5" />
-                    <circle cx="310" cy="15" r="5" fill="#84E000" stroke="#0B0E11" strokeWidth="2" />
-                  </svg>
+                    <span className="truncate text-neutral-600">
+                      {isDetectingGps ? (
+                        'Buscando satélites GPS...'
+                      ) : gpsLocation?.isGpsActive ? (
+                        <>
+                          GPS: <strong className="text-neutral-900 font-semibold">{gpsLocation.city}</strong>
+                          {gpsLocation.neighborhood ? ` (${gpsLocation.neighborhood})` : ''} • Raio 5km
+                        </>
+                      ) : (
+                        <>
+                          Região: <strong className="text-neutral-900 font-semibold">{city || 'Colombo'}{neighborhood ? ` (${neighborhood})` : ''} • {stateCode}</strong>
+                        </>
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0 ml-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsProfileModalOpen(true)}
+                      className="text-[10px] text-neutral-500 hover:text-neutral-900 font-medium transition"
+                      title="Editar cidade e bairro"
+                    >
+                      Editar Bairro
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => detectCurrentLocation(true)}
+                      disabled={isDetectingGps}
+                      className="text-[10px] text-[#497D00] hover:text-[#3A6400] font-bold flex items-center gap-1 transition"
+                      title="Atualizar GPS"
+                    >
+                      <RotateCcw size={9} className={isDetectingGps ? 'animate-spin' : ''} />
+                      {gpsLocation?.isGpsActive ? 'Atualizar' : 'Ativar GPS'}
+                    </button>
+                  </div>
                 </div>
 
-                {/* Eixo X: Semanas */}
-                <div className="flex justify-between text-[10px] text-neutral-400 font-mono pt-2 border-t border-white/5">
-                  <span>Sem 1 (R$ 38)</span>
-                  <span>Sem 2 (R$ 42)</span>
-                  <span>Sem 3 (R$ 48)</span>
-                  <span className="text-[#84E000] font-bold">Sem 4 (R$ 58)</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Cards de Métricas Secundárias */}
-            <div className="grid grid-cols-2 gap-3 mb-5">
-              <div className="bg-[#14181D] border border-white/10 rounded-2xl p-4">
-                <span className="text-[11px] text-neutral-400 block mb-1">Compras feitas</span>
-                <span className="text-xl font-bold text-white font-mono">{expenses.length} compras</span>
-                <span className="text-[10px] text-neutral-500 block mt-1">com comparativo ativo</span>
-              </div>
-
-              <div className="bg-[#14181D] border border-white/10 rounded-2xl p-4">
-                <span className="text-[11px] text-neutral-400 block mb-1">Média economizada</span>
-                <span className="text-xl font-bold text-[#84E000] font-mono">
-                  R$ {averageEconomyPerPurchase.toFixed(2).replace('.', ',')}
-                </span>
-                <span className="text-[10px] text-neutral-500 block mt-1">por compra registrada</span>
-              </div>
-            </div>
-
-            {/* Histórico Recente de Compras */}
-            <div className="space-y-3 mb-5">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
-                  Histórico recente
-                </span>
+                <div className="bg-white/95 backdrop-blur-xl hairline-border rounded-full p-1 pl-2.5 shadow-floating flex items-center gap-2 border border-black/[0.08]">
                 <button
-                  onClick={() => setIsRecordExpenseModalOpen(true)}
+                  onClick={() => setIsPhotoModalOpen(true)}
                   type="button"
-                  className="text-xs font-bold text-[#84E000] hover:underline"
+                  title="Adicionar por foto da lista"
+                  className="w-8 h-8 rounded-full bg-neutral-100 hover:bg-neutral-200 text-neutral-600 hover:text-neutral-900 flex items-center justify-center transition shrink-0"
                 >
-                  + Registrar compra
+                  <Camera size={16} />
+                </button>
+
+                <input
+                  type="text"
+                  value={inputText}
+                  disabled={isSearchingOffers}
+                  onChange={(e) => setInputText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !isSearchingOffers) handleProcessUserText(inputText);
+                  }}
+                  placeholder={isSearchingOffers ? `🔍 Pesquisando encartes na web em ${city}...` : `Dite ou digite: arroz, picanha, leite...`}
+                  className="flex-1 bg-transparent text-xs sm:text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none px-1 disabled:opacity-60"
+                />
+
+                <button
+                  onClick={() => setIsRecordingAudio(true)}
+                  type="button"
+                  disabled={isSearchingOffers}
+                  title="Gravar lista por voz"
+                  className="w-8 h-8 rounded-full bg-neutral-100 hover:bg-neutral-200 text-neutral-600 hover:text-neutral-900 disabled:opacity-30 flex items-center justify-center transition shrink-0"
+                >
+                  <Mic size={16} />
+                </button>
+
+                <button
+                  onClick={() => handleProcessUserText(inputText)}
+                  type="button"
+                  disabled={!inputText.trim() || isSearchingOffers}
+                  title="Processar itens"
+                  className="w-8 h-8 rounded-full bg-neutral-950 hover:bg-[#84E000] hover:text-neutral-950 disabled:opacity-30 text-white flex items-center justify-center shadow-xs transition duration-200 shrink-0"
+                >
+                  {isSearchingOffers ? (
+                    <div className="w-3.5 h-3.5 border-2 border-[#84E000] border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Send size={13} />
+                  )}
                 </button>
               </div>
-
-              {expenses.map((exp) => (
-                <div
-                  key={exp.id}
-                  className="bg-[#14181D] border border-white/10 rounded-2xl p-3.5 flex items-center justify-between hover:bg-white/5 transition"
-                >
-                  <div className="flex items-center gap-3">
-                    <MarketLogo name={exp.marketName} className="w-8 h-8" />
-                    <div>
-                      <strong className="text-xs font-bold text-white block">{exp.marketName}</strong>
-                      <span className="text-[11px] text-neutral-400">{exp.date} · {exp.itemsCount} itens</span>
-                    </div>
-                  </div>
-
-                  <div className="text-right">
-                    <span className="text-xs font-bold text-white font-mono block">
-                      R$ {exp.totalPaid.toFixed(2).replace('.', ',')}
-                    </span>
-                    <span className="text-[10px] font-semibold text-[#84E000]">
-                      Economizou R$ {exp.estimatedEconomy.toFixed(2).replace('.', ',')}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Botão de Instalar no Celular */}
-            <div className="mt-auto">
-              <button
-                onClick={() => setIsInstallModalOpen(true)}
-                type="button"
-                className="w-full py-3 px-4 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-2xl text-xs font-semibold flex items-center justify-between transition"
-              >
-                <div className="flex items-center gap-2.5">
-                  <span className="text-base">📲</span>
-                  <div className="text-left">
-                    <span className="block font-bold">Instalar atalho no celular</span>
-                    <span className="text-[10px] text-neutral-400">Abra como app nativo na tela inicial</span>
-                  </div>
-                </div>
-                <ChevronRight size={16} className="text-neutral-400" />
-              </button>
-            </div>
-
+            </>
+          )}
           </div>
         )}
 
-        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            BARRA INFERIOR DE NAVEGAÇÃO (BOTTOM DOCK)
-            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+        {/* 4. Bottom Navigation Bar Fixo — Dock Minimalista de Luxo */}
         <nav
           aria-label="Navegação do aplicativo"
-          className="fixed bottom-0 left-0 right-0 max-w-md mx-auto h-20 bg-[#0B0E11]/90 backdrop-blur-2xl border-t border-white/10 px-4 flex items-center justify-around z-40"
+          className="shrink-0 h-16 bg-white/80 backdrop-blur-2xl hairline-border-t px-2 flex items-center justify-around z-40"
         >
           <button
-            onClick={() => switchTab('home')}
-            type="button"
-            className={`flex flex-col items-center gap-1 py-2 px-3 rounded-2xl transition ${
-              activeTab === 'home'
-                ? 'text-[#84E000]'
-                : 'text-neutral-500 hover:text-neutral-300'
+            onClick={() => switchTab('dashboard')}
+            className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-2xl transition ${
+              activeTab === 'dashboard'
+                ? 'text-neutral-950 font-bold'
+                : 'text-neutral-400 hover:text-neutral-700'
             }`}
           >
-            <Home size={20} strokeWidth={activeTab === 'home' ? 2.5 : 1.75} />
-            <span className="text-[10px] font-semibold tracking-wide">Início</span>
-            {activeTab === 'home' && (
-              <span className="w-1.5 h-1.5 rounded-full bg-[#84E000] shadow-[0_0_6px_#84e000]" />
-            )}
+            <LayoutDashboard size={18} strokeWidth={activeTab === 'dashboard' ? 2.2 : 1.75} />
+            <span className="text-[10px]">Início</span>
+            {activeTab === 'dashboard' && <span className="w-1.5 h-1.5 rounded-full bg-[#84E000]" />}
           </button>
 
           <button
-            onClick={() => switchTab('lists')}
-            type="button"
-            className={`flex flex-col items-center gap-1 py-2 px-3 rounded-2xl transition ${
-              activeTab === 'lists'
-                ? 'text-[#84E000]'
-                : 'text-neutral-500 hover:text-neutral-300'
+            onClick={() => switchTab('chat')}
+            className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-2xl transition ${
+              activeTab === 'chat'
+                ? 'text-neutral-950 font-bold'
+                : 'text-neutral-400 hover:text-neutral-700'
             }`}
           >
-            <CheckSquare size={20} strokeWidth={activeTab === 'lists' ? 2.5 : 1.75} />
-            <span className="text-[10px] font-semibold tracking-wide">Listas</span>
-            {activeTab === 'lists' && (
-              <span className="w-1.5 h-1.5 rounded-full bg-[#84E000] shadow-[0_0_6px_#84e000]" />
-            )}
+            <MessageSquare size={18} strokeWidth={activeTab === 'chat' ? 2.2 : 1.75} />
+            <span className="text-[10px]">Conversa</span>
+            {activeTab === 'chat' && <span className="w-1.5 h-1.5 rounded-full bg-[#84E000]" />}
+          </button>
+
+          <button
+            onClick={() => switchTab('list')}
+            className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-2xl transition ${
+              activeTab === 'list'
+                ? 'text-neutral-950 font-bold'
+                : 'text-neutral-400 hover:text-neutral-700'
+            }`}
+          >
+            <CheckSquare size={18} strokeWidth={activeTab === 'list' ? 2.2 : 1.75} />
+            <span className="text-[10px]">Listas</span>
+            {activeTab === 'list' && <span className="w-1.5 h-1.5 rounded-full bg-[#84E000]" />}
+          </button>
+
+          <button
+            onClick={() => switchTab('expenses')}
+            className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-2xl transition ${
+              activeTab === 'expenses'
+                ? 'text-neutral-950 font-bold'
+                : 'text-neutral-400 hover:text-neutral-700'
+            }`}
+          >
+            <TrendingUp size={18} strokeWidth={activeTab === 'expenses' ? 2.2 : 1.75} />
+            <span className="text-[10px]">Gastos</span>
+            {activeTab === 'expenses' && <span className="w-1.5 h-1.5 rounded-full bg-[#84E000]" />}
           </button>
 
           <button
             onClick={() => switchTab('prices')}
-            type="button"
-            className={`flex flex-col items-center gap-1 py-2 px-3 rounded-2xl transition ${
+            className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-2xl transition ${
               activeTab === 'prices'
-                ? 'text-[#84E000]'
-                : 'text-neutral-500 hover:text-neutral-300'
+                ? 'text-neutral-950 font-bold'
+                : 'text-neutral-400 hover:text-neutral-700'
             }`}
           >
-            <Tag size={20} strokeWidth={activeTab === 'prices' ? 2.5 : 1.75} />
-            <span className="text-[10px] font-semibold tracking-wide">Preços</span>
-            {activeTab === 'prices' && (
-              <span className="w-1.5 h-1.5 rounded-full bg-[#84E000] shadow-[0_0_6px_#84e000]" />
-            )}
-          </button>
-
-          <button
-            onClick={() => switchTab('profile')}
-            type="button"
-            className={`flex flex-col items-center gap-1 py-2 px-3 rounded-2xl transition ${
-              activeTab === 'profile'
-                ? 'text-[#84E000]'
-                : 'text-neutral-500 hover:text-neutral-300'
-            }`}
-          >
-            <User size={20} strokeWidth={activeTab === 'profile' ? 2.5 : 1.75} />
-            <span className="text-[10px] font-semibold tracking-wide">Perfil</span>
-            {activeTab === 'profile' && (
-              <span className="w-1.5 h-1.5 rounded-full bg-[#84E000] shadow-[0_0_6px_#84e000]" />
-            )}
+            <Tag size={18} strokeWidth={activeTab === 'prices' ? 2.2 : 1.75} />
+            <span className="text-[10px]">Preços</span>
+            {activeTab === 'prices' && <span className="w-1.5 h-1.5 rounded-full bg-[#84E000]" />}
           </button>
         </nav>
-
-        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            MODAIS AUXILIARES
-            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-
-        {/* Modal: Digitar Lista Manualmente */}
-        {isTextModalOpen && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4 animate-in fade-in"
-            onClick={(e) => { if (e.target === e.currentTarget) setIsTextModalOpen(false); }}
-          >
-            <div className="bg-[#14181D] border border-white/10 rounded-3xl p-6 max-w-sm w-full shadow-2xl animate-in zoom-in-95">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <Keyboard size={18} className="text-[#84E000]" />
-                  <h3 className="text-base font-bold text-white">Digitar produtos</h3>
-                </div>
-                <button
-                  onClick={() => setIsTextModalOpen(false)}
-                  className="text-neutral-400 hover:text-white"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              <textarea
-                value={manualText}
-                onChange={(e) => setManualText(e.target.value)}
-                placeholder="Ex: 5kg arroz, feijão kicaldo, café melitta, 2 leites e sabão em pó..."
-                rows={4}
-                className="w-full p-3.5 bg-black/30 border border-white/10 rounded-2xl text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-[#84E000] mb-4 resize-none"
-              />
-
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setIsTextModalOpen(false)}
-                  className="flex-1 py-2.5 bg-white/10 hover:bg-white/15 text-neutral-300 rounded-xl text-xs font-semibold transition"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={() => {
-                    const text = manualText.trim();
-                    if (text) {
-                      setIsTextModalOpen(false);
-                      setManualText('');
-                      handleProcessUserText(text);
-                    }
-                  }}
-                  className="flex-1 py-2.5 bg-[#84E000] hover:bg-[#92F200] text-neutral-950 rounded-xl text-xs font-bold transition"
-                >
-                  Adicionar
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Modal: Adicionar Item Específico na Lista */}
-        {isAddItemModalOpen && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4 animate-in fade-in"
-            onClick={(e) => { if (e.target === e.currentTarget) setIsAddItemModalOpen(false); }}
-          >
-            <form
-              onSubmit={handleAddManualItem}
-              className="bg-[#14181D] border border-white/10 rounded-3xl p-6 max-w-sm w-full shadow-2xl animate-in zoom-in-95 space-y-4"
-            >
-              <div className="flex items-center justify-between">
-                <h3 className="text-base font-bold text-white">Adicionar produto</h3>
-                <button
-                  type="button"
-                  onClick={() => setIsAddItemModalOpen(false)}
-                  className="text-neutral-400 hover:text-white"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              <div>
-                <label className="text-[11px] text-neutral-400 font-medium block mb-1">Nome do produto</label>
-                <input
-                  type="text"
-                  required
-                  value={newItemName}
-                  onChange={(e) => setNewItemName(e.target.value)}
-                  placeholder="Ex: Azeite Extra Virgem"
-                  className="w-full px-3.5 py-2.5 bg-black/30 border border-white/10 rounded-xl text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-[#84E000]"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[11px] text-neutral-400 font-medium block mb-1">Categoria</label>
-                  <select
-                    value={newItemCategory}
-                    onChange={(e) => setNewItemCategory(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-black/30 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-[#84E000]"
-                  >
-                    <option value="Mercearia">Mercearia</option>
-                    <option value="Hortifrúti">Hortifrúti</option>
-                    <option value="Carnes">Carnes</option>
-                    <option value="Laticínios & Frios">Frios & Leite</option>
-                    <option value="Bebidas">Bebidas</option>
-                    <option value="Limpeza">Limpeza</option>
-                    <option value="Higiene">Higiene</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-[11px] text-neutral-400 font-medium block mb-1">Preço estimado (R$)</label>
-                  <input
-                    type="text"
-                    value={newItemPrice}
-                    onChange={(e) => setNewItemPrice(e.target.value)}
-                    placeholder="12,90"
-                    className="w-full px-3.5 py-2.5 bg-black/30 border border-white/10 rounded-xl text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-[#84E000]"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[11px] text-neutral-400 font-medium block mb-1">Quantidade</label>
-                  <div className="flex items-center bg-black/30 rounded-xl border border-white/10 px-2 py-1">
-                    <button
-                      type="button"
-                      onClick={() => setNewItemQty(Math.max(1, newItemQty - 1))}
-                      className="p-1 text-neutral-400 hover:text-white"
-                    >
-                      <Minus size={14} />
-                    </button>
-                    <span className="flex-1 text-center text-xs font-bold font-mono">{newItemQty}</span>
-                    <button
-                      type="button"
-                      onClick={() => setNewItemQty(newItemQty + 1)}
-                      className="p-1 text-neutral-400 hover:text-white"
-                    >
-                      <Plus size={14} />
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-[11px] text-neutral-400 font-medium block mb-1">Unidade</label>
-                  <select
-                    value={newItemUnit}
-                    onChange={(e) => setNewItemUnit(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-black/30 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-[#84E000]"
-                  >
-                    <option value="un">un</option>
-                    <option value="kg">kg</option>
-                    <option value="pct">pct</option>
-                    <option value="dz">dz</option>
-                    <option value="bandeja">bandeja</option>
-                    <option value="cx">cx</option>
-                    <option value="L">L</option>
-                  </select>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className="w-full py-3 bg-[#84E000] hover:bg-[#92F200] text-neutral-950 font-bold text-xs rounded-xl transition"
-              >
-                Salvar Produto
-              </button>
-            </form>
-          </div>
-        )}
-
-        {/* Modal: Registrar Compra */}
-        {isRecordExpenseModalOpen && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4 animate-in fade-in"
-            onClick={(e) => { if (e.target === e.currentTarget) setIsRecordExpenseModalOpen(false); }}
-          >
-            <form
-              onSubmit={handleAddExpense}
-              className="bg-[#14181D] border border-white/10 rounded-3xl p-6 max-w-sm w-full shadow-2xl animate-in zoom-in-95 space-y-4"
-            >
-              <div className="flex items-center justify-between">
-                <h3 className="text-base font-bold text-white">Registrar compra realizada</h3>
-                <button
-                  type="button"
-                  onClick={() => setIsRecordExpenseModalOpen(false)}
-                  className="text-neutral-400 hover:text-white"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              <div>
-                <label className="text-[11px] text-neutral-400 font-medium block mb-1">Mercado onde comprou</label>
-                <select
-                  value={expenseMarket}
-                  onChange={(e) => setExpenseMarket(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-black/30 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-[#84E000]"
-                >
-                  <option value="Atacadão">Atacadão</option>
-                  <option value="Assaí Atacadista">Assaí Atacadista</option>
-                  <option value="Carrefour">Carrefour</option>
-                  <option value="Max Atacadista">Max Atacadista</option>
-                  <option value="Super Muffato">Super Muffato</option>
-                  <option value="Condor">Condor</option>
-                  <option value="Supermercados Rio Verde">Supermercados Rio Verde</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-[11px] text-neutral-400 font-medium block mb-1">Valor total pago (R$)</label>
-                <input
-                  type="text"
-                  required
-                  value={expenseTotal}
-                  onChange={(e) => setExpenseTotal(e.target.value)}
-                  placeholder="284,90"
-                  className="w-full px-3.5 py-2.5 bg-black/30 border border-white/10 rounded-xl text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-[#84E000]"
-                />
-              </div>
-
-              <div>
-                <label className="text-[11px] text-neutral-400 font-medium block mb-1">Economia estimada (R$)</label>
-                <input
-                  type="text"
-                  value={expenseSaved}
-                  onChange={(e) => setExpenseSaved(e.target.value)}
-                  placeholder="38,40"
-                  className="w-full px-3.5 py-2.5 bg-black/30 border border-white/10 rounded-xl text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-[#84E000]"
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="w-full py-3 bg-[#84E000] hover:bg-[#92F200] text-neutral-950 font-bold text-xs rounded-xl transition"
-              >
-                Salvar Histórico
-              </button>
-            </form>
-          </div>
-        )}
 
         {/* Modal: Upload de Foto / OCR */}
         <PhotoUploadModal
           isOpen={isPhotoModalOpen}
           onClose={() => setIsPhotoModalOpen(false)}
-          onItemsExtracted={(extractedText) => {
-            handleProcessUserText(extractedText);
+          onItemsExtracted={(text) => {
+            switchTab('chat');
+            handleProcessUserText(text);
           }}
         />
 
-        {/* Modal: Tutorial PWA */}
-        <InstallTutorialModal
-          isOpen={isInstallModalOpen}
-          onClose={() => setIsInstallModalOpen(false)}
-        />
-
-        {/* Drawer Lateral / Menu de Configurações */}
-        {isMenuOpen && (
+        {/* Modal: Perfil & Configurações */}
+        {isProfileModalOpen && (
           <div
-            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm animate-in fade-in"
-            onClick={(e) => { if (e.target === e.currentTarget) setIsMenuOpen(false); }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto overscroll-contain animate-in fade-in duration-200"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setIsProfileModalOpen(false);
+            }}
           >
-            <div className="w-72 bg-[#14181D] border-r border-white/10 h-full p-6 flex flex-col justify-between animate-in slide-in-from-left duration-200">
-              <div className="space-y-6">
-                <div className="flex items-center justify-between pb-4 border-b border-white/10">
-                  <div className="flex items-center gap-1">
-                    <span className="font-extrabold text-lg text-white">LIST</span>
-                    <span className="font-extrabold text-lg text-[#84E000]">.ME</span>
+            <div className="bg-white rounded-[28px] max-w-sm w-full shadow-floating hairline-border flex flex-col max-h-[88dvh] overflow-hidden my-auto animate-in zoom-in-95 duration-200">
+              {/* Header fixo com botão Fechar */}
+              <div className="p-5 pb-3 border-b border-black/[0.06] flex items-center justify-between shrink-0 bg-white">
+                <div>
+                  <h3 className="font-serif text-lg font-bold text-neutral-900 leading-tight">
+                    Configurações da Residência
+                  </h3>
+                  <p className="text-[11px] text-neutral-500 mt-0.5">
+                    Localização: <strong className="text-neutral-900">{city || 'Colombo'}{neighborhood ? ` (${neighborhood})` : ''}, {stateCode}</strong>
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsProfileModalOpen(false)}
+                  className="w-8 h-8 rounded-full bg-neutral-100 hover:bg-neutral-200 text-neutral-500 hover:text-neutral-900 flex items-center justify-center transition shrink-0 ml-2"
+                  aria-label="Fechar"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Conteúdo rolável com scroll suave no celular */}
+              <div className="p-5 space-y-4 overflow-y-auto overscroll-contain flex-1">
+                {/* Informações da Conta do Assinante */}
+                <div className="bg-neutral-50 rounded-2xl p-3 border border-neutral-200/80 flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <span className="text-neutral-400 block text-[9px] font-mono uppercase font-bold">Assinatura Ativa</span>
+                    <span className="font-bold text-neutral-900 text-xs truncate block">{userName || 'Assinante LIST.ME'}</span>
+                    {userEmail && <span className="text-neutral-500 text-[10px] truncate block">{userEmail}</span>}
                   </div>
-                  <button onClick={() => setIsMenuOpen(false)} className="text-neutral-400 hover:text-white">
-                    <X size={18} />
-                  </button>
+                  <span className="px-2 py-1 rounded-full bg-[#84E000]/20 text-[#497D00] text-[9px] font-mono font-bold uppercase shrink-0 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#497D00] animate-pulse" />
+                    Ativo
+                  </span>
                 </div>
 
                 <div className="space-y-3">
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-[#84E000] font-bold">
-                    Localização & GPS
-                  </span>
-                  <div className="p-3 bg-white/5 rounded-2xl border border-white/10 text-xs space-y-1">
-                    <p className="font-bold text-white flex items-center gap-1.5">
-                      <MapPin size={13} className="text-[#84E000]" />
-                      <span>{city}, {stateCode}</span>
+                  <div>
+                    <label className="text-[10px] font-mono uppercase text-neutral-400 block mb-1 font-medium">
+                      Nome da Residência
+                    </label>
+                    <input
+                      type="text"
+                      value={houseName}
+                      onChange={(e) => setHouseName(e.target.value)}
+                      className="w-full px-3.5 py-2.5 bg-neutral-50 hairline-border rounded-xl text-xs text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#84E000]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-mono uppercase text-neutral-400 block mb-1 font-medium">
+                      Seu Nome
+                    </label>
+                    <input
+                      type="text"
+                      value={userName}
+                      onChange={(e) => setUserName(e.target.value)}
+                      placeholder="Ex: Mariana"
+                      className="w-full px-3.5 py-2.5 bg-neutral-50 hairline-border rounded-xl text-xs text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#84E000]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-mono uppercase text-neutral-400 block mb-1 font-medium">
+                      Cidade
+                    </label>
+                    <input
+                      type="text"
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      className="w-full px-3.5 py-2.5 bg-neutral-50 hairline-border rounded-xl text-xs text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#84E000]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-mono uppercase text-neutral-400 block mb-1 font-medium">
+                      Bairro / Região
+                    </label>
+                    <input
+                      type="text"
+                      value={neighborhood}
+                      onChange={(e) => setNeighborhood(e.target.value)}
+                      placeholder="Ex: Maracanã, Roça Grande, Centro, Batel..."
+                      className="w-full px-3.5 py-2.5 bg-neutral-50 hairline-border rounded-xl text-xs text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#84E000]"
+                    />
+                  </div>
+
+                  <div className="p-3 bg-[#F4FCE3] rounded-xl text-xs text-[#2A4800] leading-relaxed border border-[#D9F99D]">
+                    <strong className="block text-[10px] font-mono uppercase text-[#497D00] font-bold mb-0.5">Redes Ativas</strong>
+                    {markets.map(m => m.marketName).join(', ')}
+                  </div>
+
+                  {/* Status do Plano & Compartilhamento Familiar */}
+                  <div className="p-3.5 bg-neutral-950 text-white rounded-2xl border border-neutral-800 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono uppercase text-[#84E000] font-bold flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#84E000] animate-pulse" />
+                        PLANO FAMÍLIA ATIVO
+                      </span>
+                      <span className="text-[10px] font-mono text-neutral-400">Até 4 pessoas</span>
+                    </div>
+                    <p className="text-[11px] text-neutral-300 leading-snug">
+                      Convide membros da sua casa para adicionar produtos e acompanhar a mesma lista em tempo real.
                     </p>
-                    <p className="text-neutral-400 text-[11px]">Bairro: {neighborhood}</p>
-                    <p className="text-[10px] text-[#84E000]">● GPS Ativo (Raio 5km)</p>
+                    <button
+                      onClick={() => {
+                        const text = `Oi! Te convidei para participar da lista de compras da nossa casa no LIST.ME (${houseName || 'Minha Casa'}).\n\nAcesse por aqui para montarmos a lista e vermos os preços mais baratos juntos em ${city}: https://list.me/app`;
+                        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+                      }}
+                      type="button"
+                      className="w-full py-2.5 px-3 bg-[#84E000] hover:bg-[#92F200] text-neutral-950 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition duration-200"
+                    >
+                      <Share2 size={12} /> Convidar Membro da Família
+                    </button>
+                  </div>
+
+                  {/* Botão para abrir o tutorial de instalação */}
+                  <div className="bg-neutral-100 rounded-2xl p-3 border border-black/5 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <strong className="text-xs font-bold text-neutral-900 block truncate">
+                        Atalho na Tela de Início
+                      </strong>
+                      <span className="text-[10px] text-neutral-500 block truncate">
+                        Abra como aplicativo nativo no celular
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsProfileModalOpen(false);
+                        setIsInstallModalOpen(true);
+                      }}
+                      className="px-3 py-1.5 bg-neutral-950 hover:bg-[#84E000] hover:text-neutral-950 text-white rounded-xl text-[11px] font-bold shrink-0 transition"
+                    >
+                      Ver Como
+                    </button>
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <button
-                    onClick={() => { setIsMenuOpen(false); setIsInstallModalOpen(true); }}
-                    className="w-full py-2.5 px-3 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-semibold text-left text-neutral-200 flex items-center justify-between transition"
-                  >
-                    <span>Instalar Atalho no Celular</span>
-                    <ChevronRight size={14} className="text-neutral-500" />
-                  </button>
-
+                {/* Ações / Botões */}
+                <div className="flex flex-col gap-2 pt-2">
                   <button
                     onClick={() => {
-                      setIsMenuOpen(false);
-                      loadDefaultItems();
-                      showToast('Lista restaurada com itens padrão!');
+                      const currentProfile = { houseName, userName, city, neighborhood, state: stateCode };
+                      localStorage.setItem('listme_profile', JSON.stringify(currentProfile));
+                      setIsProfileModalOpen(false);
+                      showToast('Preferências atualizadas!');
                     }}
-                    className="w-full py-2.5 px-3 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-semibold text-left text-neutral-200 flex items-center justify-between transition"
+                    className="w-full py-3 bg-neutral-950 hover:bg-[#84E000] hover:text-neutral-950 text-white rounded-xl text-xs font-bold shadow-xs transition duration-200"
                   >
-                    <span>Carregar Itens de Exemplo</span>
-                    <RefreshCw size={14} className="text-neutral-500" />
+                    Salvar Preferências
                   </button>
-                </div>
-              </div>
 
-              <div className="pt-4 border-t border-white/10 text-center text-[10px] text-neutral-500">
-                LIST.ME · Economia Inteligente em Supermercados
+                  <button
+                    type="button"
+                    onClick={() => {
+                      localStorage.removeItem('listme_user_session');
+                      setIsProfileModalOpen(false);
+                      setIsAuthenticated(false);
+                      showToast('Sessão encerrada com sucesso.');
+                    }}
+                    className="w-full py-2.5 text-center text-xs font-bold text-red-600 hover:bg-red-50 rounded-xl transition flex items-center justify-center gap-1.5 border border-red-200"
+                  >
+                    <LogOut size={13} />
+                    Sair da Minha Conta
+                  </button>
+
+                  <button
+                    onClick={handleResetAllData}
+                    className="w-full py-2 text-center text-xs text-neutral-400 hover:text-red-600 hover:bg-red-50/50 rounded-xl transition flex items-center justify-center gap-1.5"
+                  >
+                    <RotateCcw size={12} />
+                    Redefinir localização e zerar dados
+                  </button>
+
+                  <Link
+                    href="/"
+                    className="w-full py-2 text-center text-xs text-neutral-400 hover:text-neutral-800 transition"
+                  >
+                    Ir para Landing Page
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
